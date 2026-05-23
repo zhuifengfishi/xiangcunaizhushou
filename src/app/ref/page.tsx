@@ -8,6 +8,7 @@ interface ImageItem {
   id: string;
   url: string;
   label: string;
+  isPreset?: boolean;
 }
 
 type CategoryKey = 'person' | 'product' | 'storefront' | 'field';
@@ -20,7 +21,55 @@ interface Category {
   maxCount: number;
 }
 
-// ========== 常量 ==========
+interface PresetImage {
+  id: string;
+  url: string;
+  label: string;
+}
+
+// ========== 预设素材 ==========
+const PRESET_IMAGES: Record<CategoryKey, PresetImage[]> = {
+  person: [
+    {
+      id: 'preset-person-1',
+      url: 'https://coze-coding-project.tos.coze.site/coze_storage_7643027023899754511/image/generate_image_2d453a3c-8834-4bf6-8fa1-fc7bde44ba2b.jpeg?sign=1811081423-29b9046ba6-0-f1d49ffbc618079b63866c624294cd55d5c275eba4a7800bd87991b05807d948',
+      label: '农民老爷爷 - 正面照',
+    },
+  ],
+  product: [
+    {
+      id: 'preset-product-1',
+      url: 'https://coze-coding-project.tos.coze.site/coze_storage_7643027023899754511/image/generate_image_c491ab5d-7c89-40dc-8367-2b37560cad94.jpeg?sign=1811081424-cf97b22855-0-193a2b9a97c44e542959dbd08a0f67bd457e6089d6e6e8efa6792cfaeb875ff1',
+      label: '柿饼/柿子 - 晾晒实拍',
+    },
+    {
+      id: 'preset-product-2',
+      url: 'https://coze-coding-project.tos.coze.site/coze_storage_7643027023899754511/image/generate_image_1345d67a-1050-457c-8b1b-e6fdee15300f.jpeg?sign=1811081425-dcffc67a07-0-4311e0613a843424574e8ffaaf37cec1bc95ceb5c277445f7fb804f3f145480c',
+      label: '黄酒 - 传统酿造',
+    },
+  ],
+  storefront: [
+    {
+      id: 'preset-store-1',
+      url: 'https://coze-coding-project.tos.coze.site/coze_storage_7643027023899754511/image/generate_image_09ec8133-cf7b-46b1-a75f-3117ace8ed72.jpeg?sign=1811081424-4652944abb-0-70f055a197c19e4fd150099f0619e66d5a58eeec1514ee4e590bbd099f220861',
+      label: '民宿门头 - 古村老屋',
+    },
+    {
+      id: 'preset-store-2',
+      url: 'https://coze-coding-project.tos.coze.site/coze_storage_7643027023899754511/image/generate_image_7b0b49be-0c01-46b1-a38b-15ad07820106.jpeg?sign=1811081425-2bee867641-0-842e4b46f3c43e18a66b790124afc4ce7bc73b158a96286053d10f578a70bbbe',
+      label: '农家饭店 - 室内环境',
+    },
+  ],
+  field: [
+    {
+      id: 'preset-field-1',
+      url: 'https://coze-coding-project.tos.coze.site/coze_storage_7643027023899754511/image/generate_image_c4850be1-a2df-4d03-a8fd-6184ed9dcb74.jpeg?sign=1811081424-3f82612cc8-0-4b20d680c300c743086414e0e20b2f272296a487d7e590c352605d3ea77a23d8',
+      label: '梯田村庄 - 秋收风景',
+    },
+  ],
+};
+
+// ========== 分类配置 ==========
 const CATEGORIES: Category[] = [
   { key: 'person', icon: '🧑‍🌾', title: '人物形象', desc: '你的头像、工作照、生活照，让AI生成的视频里有你', maxCount: 3 },
   { key: 'product', icon: '🍊', title: '真实产品', desc: '你要卖的东西，实拍就好', maxCount: 4 },
@@ -30,13 +79,20 @@ const CATEGORIES: Category[] = [
 
 export default function RefPage() {
   const router = useRouter();
-  const [images, setImages] = useState<Record<CategoryKey, ImageItem[]>>({
+  const [selectedPresets, setSelectedPresets] = useState<Record<CategoryKey, Set<string>>>({
+    person: new Set<string>(),
+    product: new Set<string>(),
+    storefront: new Set<string>(),
+    field: new Set<string>(),
+  });
+  const [userImages, setUserImages] = useState<Record<CategoryKey, ImageItem[]>>({
     person: [],
     product: [],
     storefront: [],
     field: [],
   });
   const [saved, setSaved] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState<Record<string, boolean>>({});
   const fileInputRefs = useRef<Record<CategoryKey, HTMLInputElement | null>>({
     person: null,
     product: null,
@@ -49,17 +105,54 @@ export default function RefPage() {
     try {
       const savedData = localStorage.getItem('refImages');
       if (savedData) {
-        setImages(JSON.parse(savedData));
+        const parsed = JSON.parse(savedData);
+        if (parsed._selectedPresets) {
+          const restored: Record<CategoryKey, Set<string>> = {
+            person: new Set(parsed._selectedPresets.person || []),
+            product: new Set(parsed._selectedPresets.product || []),
+            storefront: new Set(parsed._selectedPresets.storefront || []),
+            field: new Set(parsed._selectedPresets.field || []),
+          };
+          setSelectedPresets(restored);
+        }
+        if (parsed._userImages) {
+          setUserImages(parsed._userImages);
+        }
       }
-    } catch {}
+    } catch { /* ignore */ }
   }, []);
 
-  // 处理图片上传
+  // 切换预设图片选中
+  const togglePreset = (category: CategoryKey, presetId: string) => {
+    setSelectedPresets(prev => {
+      const newSet = new Set(prev[category]);
+      if (newSet.has(presetId)) {
+        newSet.delete(presetId);
+      } else {
+        newSet.add(presetId);
+      }
+      return { ...prev, [category]: newSet };
+    });
+  };
+
+  // 全选/取消该分类所有预设
+  const toggleAllPresets = (category: CategoryKey) => {
+    const allIds = PRESET_IMAGES[category].map(p => p.id);
+    const currentSelected = selectedPresets[category];
+    const allSelected = allIds.every(id => currentSelected.has(id));
+
+    setSelectedPresets(prev => ({
+      ...prev,
+      [category]: allSelected ? new Set<string>() : new Set(allIds),
+    }));
+  };
+
+  // 处理用户上传图片
   const handleUpload = (category: CategoryKey, files: FileList | null) => {
     if (!files) return;
     const cat = CATEGORIES.find(c => c.key === category)!;
-    const current = images[category];
-    const remaining = cat.maxCount - current.length;
+    const currentTotal = selectedPresets[category].size + userImages[category].length;
+    const remaining = cat.maxCount - currentTotal;
     if (remaining <= 0) return;
 
     const filesToProcess = Array.from(files).slice(0, remaining);
@@ -69,15 +162,15 @@ export default function RefPage() {
       label: file.name,
     }));
 
-    setImages(prev => ({
+    setUserImages(prev => ({
       ...prev,
       [category]: [...prev[category], ...newItems],
     }));
   };
 
-  // 删除图片
-  const handleRemove = (category: CategoryKey, id: string) => {
-    setImages(prev => ({
+  // 删除用户上传的图片
+  const handleRemoveUserImage = (category: CategoryKey, id: string) => {
+    setUserImages(prev => ({
       ...prev,
       [category]: prev[category].filter(img => {
         if (img.id === id) {
@@ -90,14 +183,24 @@ export default function RefPage() {
   };
 
   // 统计总数
-  const totalCount = Object.values(images).flat().length;
+  const totalCount = Object.entries(selectedPresets).reduce((sum, [key, set]) => {
+    return sum + set.size + userImages[key as CategoryKey].length;
+  }, 0);
+
+  // 获取某个分类的已选总数
+  const getCategoryCount = (key: CategoryKey) => selectedPresets[key].size + userImages[key].length;
 
   // 保存并返回
   const handleSave = () => {
     try {
-      // 只保存元信息（url是blob的，页面关闭会失效，这里主要标记用户已操作）
       const saveData = {
-        ...images,
+        _selectedPresets: {
+          person: Array.from(selectedPresets.person),
+          product: Array.from(selectedPresets.product),
+          storefront: Array.from(selectedPresets.storefront),
+          field: Array.from(selectedPresets.field),
+        },
+        _userImages: userImages,
         _savedAt: new Date().toISOString(),
         _totalCount: totalCount,
       };
@@ -107,7 +210,6 @@ export default function RefPage() {
         router.push('/');
       }, 1500);
     } catch {
-      // localStorage满了也不影响
       setSaved(true);
       setTimeout(() => {
         router.push('/');
@@ -126,8 +228,8 @@ export default function RefPage() {
           >
             ← 返回
           </button>
-          <h1 className="text-lg font-bold text-[#3D2B1F] flex-1 text-center">上传参考图</h1>
-          <span className="text-sm text-[#8B7355]">{totalCount}张</span>
+          <h1 className="text-lg font-bold text-[#3D2B1F] flex-1 text-center">选参考图</h1>
+          <span className="text-sm font-bold text-[#C4704B]">{totalCount}张已选</span>
         </div>
       </header>
 
@@ -136,75 +238,152 @@ export default function RefPage() {
         <div className="bg-[#FFF0E0] rounded-2xl p-5 border border-[#E8D5C4] mb-6">
           <div className="flex items-center gap-2 mb-3">
             <span className="text-2xl">📸</span>
-            <span className="text-xl font-bold text-[#3D2B1F]">传几张照片，AI照着你的来</span>
+            <span className="text-xl font-bold text-[#3D2B1F]">选几张照片，AI照着你的来</span>
           </div>
           <p className="text-[#6B4226] text-base leading-relaxed">
-            上传你自己的照片和实景照片，AI生成的视频和海报就能还原真实场景。<br/>
-            手机里已有的照片就行，不要求拍得好看。
+            下面已经帮你准备好了一些样图，直接勾选就能用。<br/>
+            也可以上传你自己的照片替换，手机里已有的就行。
           </p>
         </div>
 
-        {/* 四个上传区 */}
+        {/* 四个分类区 */}
         <div className="space-y-5">
-          {CATEGORIES.map(cat => (
-            <div key={cat.key} className="bg-white rounded-2xl border border-[#E8D5C4] p-5">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-2xl">{cat.icon}</span>
-                <div>
-                  <h3 className="text-lg font-bold text-[#3D2B1F]">{cat.title}</h3>
-                  <p className="text-sm text-[#8B7355]">{cat.desc}</p>
-                </div>
-              </div>
+          {CATEGORIES.map(cat => {
+            const presets = PRESET_IMAGES[cat.key];
+            const allSelected = presets.length > 0 && presets.every(p => selectedPresets[cat.key].has(p.id));
+            const currentCount = getCategoryCount(cat.key);
 
-              {/* 已上传图片展示 */}
-              {images[cat.key].length > 0 && (
-                <div className="flex flex-wrap gap-3 mb-3">
-                  {images[cat.key].map(img => (
-                    <div key={img.id} className="relative group">
-                      <div className="w-20 h-20 rounded-xl overflow-hidden border-2 border-[#E8D5C4]">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={img.url}
-                          alt={img.label}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                      <button
-                        onClick={() => handleRemove(cat.key, img.id)}
-                        className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full text-xs font-bold flex items-center justify-center shadow-md hover:bg-red-600 transition-colors"
-                      >
-                        ✕
-                      </button>
+            return (
+              <div key={cat.key} className="bg-white rounded-2xl border border-[#E8D5C4] overflow-hidden">
+                {/* 分类标题 */}
+                <div className="flex items-center justify-between p-5 pb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl">{cat.icon}</span>
+                    <div>
+                      <h3 className="text-lg font-bold text-[#3D2B1F]">{cat.title}</h3>
+                      <p className="text-sm text-[#8B7355]">{cat.desc}</p>
                     </div>
-                  ))}
+                  </div>
+                  <span className="text-sm font-bold text-[#C4704B]">{currentCount}/{cat.maxCount}</span>
                 </div>
-              )}
 
-              {/* 上传按钮 */}
-              {images[cat.key].length < cat.maxCount ? (
-                <div>
-                  <input
-                    ref={el => { fileInputRefs.current[cat.key] = el; }}
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    className="hidden"
-                    onChange={e => handleUpload(cat.key, e.target.files)}
-                  />
-                  <button
-                    onClick={() => fileInputRefs.current[cat.key]?.click()}
-                    className="w-full py-4 rounded-xl border-2 border-dashed border-[#E8D5C4] text-[#8B7355] text-base font-bold hover:border-[#C4704B] hover:text-[#C4704B] transition-colors active:scale-[0.97]"
-                  >
-                    + 点击上传（还可传{cat.maxCount - images[cat.key].length}张）
-                  </button>
-                </div>
-              ) : (
-                <p className="text-center text-sm text-[#6B8F71] font-bold py-2">
-                  ✓ 已传满{cat.maxCount}张
-                </p>
-              )}
-            </div>
-          ))}
+                {/* 预设样图 */}
+                {presets.length > 0 && (
+                  <div className="px-5 pb-3">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-sm font-bold text-[#6B4226] bg-[#FFF0E0] px-3 py-1 rounded-full">
+                        示例样图（可直接勾选）
+                      </span>
+                      {presets.length > 1 && (
+                        <button
+                          onClick={() => toggleAllPresets(cat.key)}
+                          className="text-sm font-bold text-[#C4704B] hover:underline"
+                        >
+                          {allSelected ? '取消全选' : '全选'}
+                        </button>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-3">
+                      {presets.map(preset => {
+                        const isSelected = selectedPresets[cat.key].has(preset.id);
+                        const loaded = imageLoaded[preset.id];
+                        return (
+                          <button
+                            key={preset.id}
+                            onClick={() => togglePreset(cat.key, preset.id)}
+                            className={`relative rounded-xl overflow-hidden border-3 transition-all active:scale-[0.97] ${
+                              isSelected
+                                ? 'border-[#C4704B] ring-2 ring-[#C4704B]/30 shadow-md'
+                                : 'border-[#E8D5C4] hover:border-[#D4A853]'
+                            }`}
+                            style={{ width: '110px', height: '110px' }}
+                          >
+                            {!loaded && (
+                              <div className="absolute inset-0 bg-[#F5EDE4] flex items-center justify-center">
+                                <div className="w-6 h-6 border-2 border-[#E8D5C4] border-t-[#C4704B] rounded-full animate-spin" />
+                              </div>
+                            )}
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={preset.url}
+                              alt={preset.label}
+                              className="w-full h-full object-cover"
+                              onLoad={() => setImageLoaded(prev => ({ ...prev, [preset.id]: true }))}
+                            />
+                            {/* 选中标记 */}
+                            <div className={`absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center transition-all text-sm font-bold ${
+                              isSelected
+                                ? 'bg-[#C4704B] text-white shadow-md'
+                                : 'bg-white/80 text-[#8B7355] border border-[#E8D5C4]'
+                            }`}>
+                              {isSelected ? '✓' : ''}
+                            </div>
+                            {/* 标签 */}
+                            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent px-2 py-1.5">
+                              <span className="text-white text-xs font-bold leading-tight block">{preset.label}</span>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* 用户上传的图片 */}
+                {userImages[cat.key].length > 0 && (
+                  <div className="px-5 pb-3">
+                    <span className="text-sm font-bold text-[#6B8F71] mb-2 block">你上传的</span>
+                    <div className="flex flex-wrap gap-3">
+                      {userImages[cat.key].map(img => (
+                        <div key={img.id} className="relative" style={{ width: '110px', height: '110px' }}>
+                          <div className="w-full h-full rounded-xl overflow-hidden border-2 border-[#6B8F71]">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={img.url}
+                              alt={img.label}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          <button
+                            onClick={() => handleRemoveUserImage(cat.key, img.id)}
+                            className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full text-xs font-bold flex items-center justify-center shadow-md hover:bg-red-600 transition-colors"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* 上传按钮 */}
+                {currentCount < cat.maxCount ? (
+                  <div className="px-5 pb-5">
+                    <input
+                      ref={el => { fileInputRefs.current[cat.key] = el; }}
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      className="hidden"
+                      onChange={e => handleUpload(cat.key, e.target.files)}
+                    />
+                    <button
+                      onClick={() => fileInputRefs.current[cat.key]?.click()}
+                      className="w-full py-4 rounded-xl border-2 border-dashed border-[#E8D5C4] text-[#8B7355] text-base font-bold hover:border-[#C4704B] hover:text-[#C4704B] transition-colors active:scale-[0.97]"
+                    >
+                      + 上传你自己的照片（还可传{cat.maxCount - currentCount}张）
+                    </button>
+                  </div>
+                ) : (
+                  <div className="px-5 pb-5">
+                    <p className="text-center text-sm text-[#6B8F71] font-bold py-2">
+                      ✓ 已选满{cat.maxCount}张
+                    </p>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
 
         {/* 温馨提示 */}
@@ -225,26 +404,23 @@ export default function RefPage() {
         <div className="mt-8 space-y-3 pb-8">
           <button
             onClick={handleSave}
-            disabled={totalCount === 0}
             className={`w-full py-5 rounded-2xl text-xl font-bold transition-all ${
               saved
                 ? 'bg-[#6B8F71] text-white shadow-lg'
                 : totalCount > 0
                   ? 'bg-[#C4704B] text-white hover:bg-[#A85A38] shadow-lg active:scale-[0.97]'
-                  : 'bg-[#E8D5C4] text-[#8B7355] cursor-not-allowed'
+                  : 'bg-[#C4704B]/80 text-white hover:bg-[#C4704B] shadow-lg active:scale-[0.97]'
             }`}
           >
-            {saved ? '已保存，正在返回...' : totalCount > 0 ? `保存${totalCount}张参考图` : '请先上传至少1张照片'}
+            {saved ? '已保存，正在返回...' : totalCount > 0 ? `确认选好${totalCount}张，返回生成` : '直接确认，返回生成'}
           </button>
 
-          {totalCount > 0 && !saved && (
-            <button
-              onClick={() => router.push('/')}
-              className="w-full py-4 rounded-2xl text-lg font-bold bg-[#E8D5C4] text-[#6B4226] hover:bg-[#DDD0C0] transition-colors"
-            >
-              先不上传，直接返回
-            </button>
-          )}
+          <button
+            onClick={() => router.push('/')}
+            className="w-full py-4 rounded-2xl text-lg font-bold bg-[#E8D5C4] text-[#6B4226] hover:bg-[#DDD0C0] transition-colors"
+          >
+            先不选，直接返回
+          </button>
         </div>
       </main>
     </div>
