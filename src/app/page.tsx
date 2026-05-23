@@ -14,16 +14,24 @@ interface FormData {
   slogan: string;
 }
 
-interface StoryboardItem {
-  time: string;
-  shot: string;
-  text: string;
+interface VideoScenePrompt {
+  segment: number;
+  timeRange: string;
+  prompt: string;
+  promptCN: string;
+  subtitle: string;
+}
+
+interface PosterPrompt {
+  prompt: string;
+  promptCN: string;
+  style: string;
+  aspectRatio: string;
 }
 
 interface GenerateResult {
-  script: string;
-  storyboard: StoryboardItem[];
-  subtitles: string[];
+  videoPrompts: VideoScenePrompt[];
+  posterPrompt: PosterPrompt;
   publishCopy: string;
   tags: string[];
 }
@@ -136,6 +144,41 @@ const FORM_FIELDS: { key: keyof FormData; label: string; placeholder: string; mu
 
 const emptyFormData: FormData = { name: '', highlights: '', price: '', location: '', contact: '', slogan: '' };
 
+// ========== 复制按钮组件 ==========
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // fallback
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  }, [text]);
+
+  return (
+    <button
+      onClick={handleCopy}
+      className={`warm-btn text-sm px-3 py-1.5 rounded-lg font-medium transition-all ${
+        copied
+          ? 'bg-[#6B8F71] text-white'
+          : 'bg-[#FFF0E0] text-[#C4704B] hover:bg-[#C4704B] hover:text-white'
+      }`}
+    >
+      {copied ? '已复制 ✓' : '复制提示词'}
+    </button>
+  );
+}
+
 // ========== 主组件 ==========
 export default function HomePage() {
   const [step, setStep] = useState(1);
@@ -147,31 +190,22 @@ export default function HomePage() {
   const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
   const [generating, setGenerating] = useState(false);
   const [result, setResult] = useState<GenerateResult | null>(null);
-  const [videoGenerating, setVideoGenerating] = useState(false);
-  const [videoUrl, setVideoUrl] = useState<string>('');
+  const [resultTab, setResultTab] = useState<'video' | 'poster' | 'publish'>('video');
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [uploadedPhotoNames, setUploadedPhotoNames] = useState<string[]>([]);
 
-  // 步骤进度
   const progress = step <= 4 ? ((step - 1) / 3) * 100 : 100;
 
-  // 选择类型
-  const handleSelectType = useCallback((type: TemplateType) => {
-    setSelectedType(type);
-  }, []);
+  const handleSelectType = useCallback((type: TemplateType) => setSelectedType(type), []);
 
-  // 选择地方案例方向
   const handleSelectLocalDirection = useCallback((caseKey: string, direction: string) => {
     setLocalCase(caseKey);
     setLocalDirection(direction);
   }, []);
 
-  // 填写表单
   const handleFormChange = useCallback((key: keyof FormData, value: string) => {
     setFormData(prev => ({ ...prev, [key]: value }));
   }, []);
 
-  // 处理图片上传
   const handlePhotoChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
@@ -185,7 +219,6 @@ export default function HomePage() {
     setPhotoPreviews(newPreviews.slice(0, 6));
   }, [photos, photoPreviews]);
 
-  // 删除图片
   const handleRemovePhoto = useCallback((index: number) => {
     setPhotos(prev => prev.filter((_, i) => i !== index));
     setPhotoPreviews(prev => {
@@ -194,7 +227,6 @@ export default function HomePage() {
     });
   }, []);
 
-  // 加载演示案例
   const handleLoadDemo = useCallback((demoCase: DemoCase) => {
     setSelectedType(demoCase.type);
     setLocalCase(demoCase.localCase);
@@ -202,31 +234,13 @@ export default function HomePage() {
     setStep(2);
   }, []);
 
-  // 生成内容
   const handleGenerate = useCallback(async () => {
     if (!selectedType) return;
     setGenerating(true);
     setResult(null);
-    setVideoUrl('');
+    setResultTab('video');
 
     try {
-      // 先上传图片
-      let photoNames: string[] = [];
-      if (photos.length > 0) {
-        const uploadFormData = new FormData();
-        photos.forEach(photo => uploadFormData.append('photos', photo));
-        const uploadRes = await fetch('/api/upload', {
-          method: 'POST',
-          body: uploadFormData,
-        });
-        const uploadData = await uploadRes.json();
-        if (uploadData.success) {
-          photoNames = uploadData.photos;
-        }
-      }
-      setUploadedPhotoNames(photoNames);
-
-      // 生成内容
       const res = await fetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -238,7 +252,6 @@ export default function HomePage() {
           localDirection,
         }),
       });
-
       const data = await res.json();
       if (data.success) {
         setResult(data.data);
@@ -253,35 +266,6 @@ export default function HomePage() {
     }
   }, [selectedType, formData, photos, localCase, localDirection]);
 
-  // 生成视频
-  const handleGenerateVideo = useCallback(async () => {
-    if (!result) return;
-    setVideoGenerating(true);
-
-    try {
-      const res = await fetch('/api/video', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          photos: uploadedPhotoNames,
-          subtitles: result.subtitles,
-        }),
-      });
-
-      const data = await res.json();
-      if (data.success) {
-        setVideoUrl(data.videoUrl);
-      } else {
-        alert(data.error || '视频生成失败，请重试');
-      }
-    } catch {
-      alert('视频生成出错，请重试');
-    } finally {
-      setVideoGenerating(false);
-    }
-  }, [result, uploadedPhotoNames]);
-
-  // 重新开始
   const handleReset = useCallback(() => {
     setStep(1);
     setSelectedType(null);
@@ -292,17 +276,20 @@ export default function HomePage() {
     photoPreviews.forEach(p => URL.revokeObjectURL(p));
     setPhotoPreviews([]);
     setResult(null);
-    setVideoUrl('');
-    setUploadedPhotoNames([]);
+    setResultTab('video');
   }, [photoPreviews]);
 
-  // 兼容"龙塘古镇"
-  const getDisplayLabel = useCallback((caseKey: string, label: string) => {
-    if (caseKey === 'longtan' && formData.location?.includes('龙塘')) {
-      return '龙塘古镇（龙潭）';
-    }
-    return label;
-  }, [formData.location]);
+  // 拼接完整视频提示词文本（用于一键复制）
+  const fullVideoPromptText = result
+    ? result.videoPrompts.map(s =>
+        `【第${s.segment}段 ${s.timeRange}】\n中文说明：${s.promptCN}\nAI提示词：${s.prompt}\n配字幕：${s.subtitle}`
+      ).join('\n\n')
+    : '';
+
+  // 海报提示词文本
+  const fullPosterPromptText = result
+    ? `宣传海报AI提示词：\n${result.posterPrompt.prompt}\n\n中文说明：${result.posterPrompt.promptCN}\n推荐风格：${result.posterPrompt.style}\n推荐比例：${result.posterPrompt.aspectRatio}`
+    : '';
 
   return (
     <div className="min-h-screen bg-[#FFF8F0]">
@@ -312,8 +299,7 @@ export default function HomePage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="text-2xl">🌾</span>
-              <h1 className="text-xl font-bold text-[#3D2B1F]">追风少年</h1>
-              <span className="text-sm text-[#8B7355] hidden sm:inline">乡村短视频生成助手</span>
+              <h1 className="text-xl font-bold text-[#3D2B1F]">乡村宣传AI助手</h1>
             </div>
             {step > 1 && step <= 5 && (
               <button
@@ -324,22 +310,18 @@ export default function HomePage() {
               </button>
             )}
           </div>
-          {/* 进度条 */}
           {step <= 4 && (
-            <div className="mt-2 h-2 rounded-full bg-[#E8D5C4] overflow-hidden">
-              <div
-                className="h-full rounded-full bg-[#C4704B] transition-all duration-500 ease-out"
-                style={{ width: `${progress}%` }}
-              />
-            </div>
-          )}
-          {step <= 4 && (
-            <div className="flex justify-between mt-1 text-xs text-[#8B7355]">
-              <span className={step >= 1 ? 'text-[#C4704B] font-medium' : ''}>①选类型</span>
-              <span className={step >= 2 ? 'text-[#C4704B] font-medium' : ''}>②填信息</span>
-              <span className={step >= 3 ? 'text-[#C4704B] font-medium' : ''}>③传照片</span>
-              <span className={step >= 4 ? 'text-[#C4704B] font-medium' : ''}>④生成</span>
-            </div>
+            <>
+              <div className="mt-2 h-2 rounded-full bg-[#E8D5C4] overflow-hidden">
+                <div className="h-full rounded-full bg-[#C4704B] transition-all duration-500 ease-out" style={{ width: `${progress}%` }} />
+              </div>
+              <div className="flex justify-between mt-1 text-xs text-[#8B7355]">
+                <span className={step >= 1 ? 'text-[#C4704B] font-medium' : ''}>①选类型</span>
+                <span className={step >= 2 ? 'text-[#C4704B] font-medium' : ''}>②填信息</span>
+                <span className={step >= 3 ? 'text-[#C4704B] font-medium' : ''}>③传照片</span>
+                <span className={step >= 4 ? 'text-[#C4704B] font-medium' : ''}>④生成</span>
+              </div>
+            </>
           )}
         </div>
       </header>
@@ -351,7 +333,6 @@ export default function HomePage() {
             <h2 className="text-2xl font-bold text-[#3D2B1F] mb-2">你想宣传什么？</h2>
             <p className="text-[#8B7355] mb-6 text-lg">选一个大类，我们帮你搭好框架</p>
 
-            {/* 类型选择 */}
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-8">
               {TYPE_OPTIONS.map(opt => (
                 <button
@@ -376,7 +357,7 @@ export default function HomePage() {
                 {LOCAL_CASES.map(lc => (
                   <div key={lc.key} className="bg-white rounded-2xl border border-[#E8D5C4] p-4">
                     <div className="font-bold text-[#3D2B1F] text-lg mb-3">
-                      {getDisplayLabel(lc.key, lc.label)}
+                      {lc.label}
                       {lc.aliases && <span className="text-sm text-[#8B7355] font-normal ml-2">（输入"{lc.aliases[0]}"也行）</span>}
                     </div>
                     <div className="flex flex-wrap gap-2">
@@ -422,7 +403,6 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* 下一步按钮 */}
             <div className="sticky bottom-4">
               <button
                 onClick={() => setStep(2)}
@@ -498,7 +478,6 @@ export default function HomePage() {
             <h2 className="text-2xl font-bold text-[#3D2B1F] mb-2">传几张照片</h2>
             <p className="text-[#8B7355] mb-6 text-lg">手机里已有的照片就可以，不要求会拍大片</p>
 
-            {/* 照片预览区 */}
             <div className="grid grid-cols-3 gap-3 mb-4">
               {photoPreviews.map((preview, idx) => (
                 <div key={idx} className="relative aspect-[3/4] rounded-xl overflow-hidden border-2 border-[#E8D5C4]">
@@ -511,8 +490,6 @@ export default function HomePage() {
                   </button>
                 </div>
               ))}
-
-              {/* 添加按钮 */}
               {photos.length < 6 && (
                 <button
                   onClick={() => fileInputRef.current?.click()}
@@ -525,30 +502,17 @@ export default function HomePage() {
               )}
             </div>
 
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              multiple
-              onChange={handlePhotoChange}
-              className="hidden"
-            />
+            <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={handlePhotoChange} className="hidden" />
 
             <p className="text-sm text-[#8B7355] mb-6 text-center">
-              最多上传6张，支持 JPG、PNG 格式。不上传照片也能生成文案。
+              最多上传6张，支持 JPG、PNG 格式。不上传照片也能生成提示词。
             </p>
 
             <div className="flex gap-3 sticky bottom-4">
-              <button
-                onClick={() => setStep(2)}
-                className="warm-btn flex-1 py-4 rounded-2xl text-xl font-bold bg-[#E8D5C4] text-[#6B4226] hover:bg-[#DDD0C0]"
-              >
+              <button onClick={() => setStep(2)} className="warm-btn flex-1 py-4 rounded-2xl text-xl font-bold bg-[#E8D5C4] text-[#6B4226] hover:bg-[#DDD0C0]">
                 ← 上一步
               </button>
-              <button
-                onClick={() => setStep(4)}
-                className="warm-btn flex-[2] py-4 rounded-2xl text-xl font-bold bg-[#C4704B] text-white hover:bg-[#A85A38] shadow-lg"
-              >
+              <button onClick={() => setStep(4)} className="warm-btn flex-[2] py-4 rounded-2xl text-xl font-bold bg-[#C4704B] text-white hover:bg-[#A85A38] shadow-lg">
                 照片选好了，下一步 →
               </button>
             </div>
@@ -561,7 +525,6 @@ export default function HomePage() {
             <h2 className="text-2xl font-bold text-[#3D2B1F] mb-2">检查一下，然后生成</h2>
             <p className="text-[#8B7355] mb-6 text-lg">确认信息没问题，点下面大按钮就行</p>
 
-            {/* 信息摘要 */}
             <div className="bg-white rounded-2xl border border-[#E8D5C4] p-5 mb-4 space-y-3">
               <div className="flex items-center gap-2">
                 <span className="text-sm font-bold text-[#8B7355]">类型：</span>
@@ -587,23 +550,35 @@ export default function HomePage() {
               </div>
             </div>
 
+            {/* 生成说明 */}
+            <div className="bg-[#FFF0E0] rounded-2xl p-4 mb-6 border border-[#E8D5C4]">
+              <div className="font-bold text-[#6B4226] mb-2">生成后会给你两版提示词：</div>
+              <div className="flex gap-4">
+                <div className="flex-1 bg-white rounded-xl p-3 border border-[#E8D5C4]">
+                  <div className="text-lg mb-1">🎬</div>
+                  <div className="font-bold text-[#3D2B1F] text-sm">AI短视频分镜提示词</div>
+                  <div className="text-xs text-[#8B7355]">5段场景，直接粘贴到Sora、可灵等</div>
+                </div>
+                <div className="flex-1 bg-white rounded-xl p-3 border border-[#E8D5C4]">
+                  <div className="text-lg mb-1">🖼️</div>
+                  <div className="font-bold text-[#3D2B1F] text-sm">宣传海报图片提示词</div>
+                  <div className="text-xs text-[#8B7355]">直接粘贴到Midjourney、DALL-E等</div>
+                </div>
+              </div>
+            </div>
+
             <div className="flex gap-3 sticky bottom-4">
-              <button
-                onClick={() => setStep(3)}
-                className="warm-btn flex-1 py-4 rounded-2xl text-xl font-bold bg-[#E8D5C4] text-[#6B4226] hover:bg-[#DDD0C0]"
-              >
+              <button onClick={() => setStep(3)} className="warm-btn flex-1 py-4 rounded-2xl text-xl font-bold bg-[#E8D5C4] text-[#6B4226] hover:bg-[#DDD0C0]">
                 ← 修改
               </button>
               <button
                 onClick={handleGenerate}
                 disabled={generating}
                 className={`warm-btn flex-[2] py-4 rounded-2xl text-xl font-bold transition-all ${
-                  generating
-                    ? 'bg-[#E8D5C4] text-[#8B7355] cursor-wait'
-                    : 'bg-[#C4704B] text-white hover:bg-[#A85A38] shadow-lg'
+                  generating ? 'bg-[#E8D5C4] text-[#8B7355] cursor-wait' : 'bg-[#C4704B] text-white hover:bg-[#A85A38] shadow-lg'
                 }`}
               >
-                {generating ? '正在生成...' : '帮我生成视频草稿'}
+                {generating ? '正在生成...' : '帮我生成提示词'}
               </button>
             </div>
           </div>
@@ -612,156 +587,173 @@ export default function HomePage() {
         {/* ===== 步骤5：生成结果 ===== */}
         {step === 5 && result && (
           <div className="animate-fade-in-up">
-            <h2 className="text-2xl font-bold text-[#3D2B1F] mb-2">生成好了！</h2>
-            <p className="text-[#8B7355] mb-6 text-lg">以下是你的视频草稿，照着做就行</p>
+            <h2 className="text-2xl font-bold text-[#3D2B1F] mb-2">提示词生成好了！</h2>
+            <p className="text-[#8B7355] mb-6 text-lg">复制下面的提示词，粘贴到AI工具里就能用</p>
 
-            {/* 照着说 */}
-            <div className="result-card mb-4 animate-fade-in-up-delay-1">
-              <div className="flex items-center gap-2 mb-3">
-                <span className="text-2xl">🎤</span>
-                <h3 className="text-xl font-bold text-[#3D2B1F]">照着说</h3>
-                <span className="text-sm text-[#8B7355]">15秒口播脚本</span>
-              </div>
-              <div className="bg-[#FFF8F0] rounded-xl p-4 text-lg leading-relaxed text-[#3D2B1F]">
-                {result.script}
-              </div>
+            {/* 三个Tab切换 */}
+            <div className="flex gap-2 mb-6">
+              <button
+                onClick={() => setResultTab('video')}
+                className={`warm-btn flex-1 py-3 rounded-xl text-lg font-bold transition-all ${
+                  resultTab === 'video' ? 'bg-[#C4704B] text-white shadow-md' : 'bg-white text-[#6B4226] border border-[#E8D5C4]'
+                }`}
+              >
+                🎬 AI短视频分镜
+              </button>
+              <button
+                onClick={() => setResultTab('poster')}
+                className={`warm-btn flex-1 py-3 rounded-xl text-lg font-bold transition-all ${
+                  resultTab === 'poster' ? 'bg-[#C4704B] text-white shadow-md' : 'bg-white text-[#6B4226] border border-[#E8D5C4]'
+                }`}
+              >
+                🖼️ 宣传海报
+              </button>
+              <button
+                onClick={() => setResultTab('publish')}
+                className={`warm-btn flex-1 py-3 rounded-xl text-lg font-bold transition-all ${
+                  resultTab === 'publish' ? 'bg-[#C4704B] text-white shadow-md' : 'bg-white text-[#6B4226] border border-[#E8D5C4]'
+                }`}
+              >
+                🚀 发布文案
+              </button>
             </div>
 
-            {/* 照着拍 */}
-            <div className="result-card mb-4 animate-fade-in-up-delay-2">
-              <div className="flex items-center gap-2 mb-3">
-                <span className="text-2xl">🎬</span>
-                <h3 className="text-xl font-bold text-[#3D2B1F]">照着拍</h3>
-                <span className="text-sm text-[#8B7355]">每3秒拍什么</span>
+            {/* ===== AI短视频分镜提示词 ===== */}
+            {resultTab === 'video' && (
+              <div className="animate-fade-in-up">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className="text-xl font-bold text-[#3D2B1F]">AI短视频分镜提示词</h3>
+                    <p className="text-sm text-[#8B7355]">5段场景，每段3秒，可直接粘贴到Sora、可灵、Runway等</p>
+                  </div>
+                  <CopyButton text={fullVideoPromptText} />
+                </div>
+
+                <div className="space-y-4">
+                  {result.videoPrompts.map((scene) => (
+                    <div key={scene.segment} className="result-card">
+                      {/* 段落标题 */}
+                      <div className="flex items-center gap-3 mb-3">
+                        <span className="bg-[#C4704B] text-white text-sm font-bold w-8 h-8 rounded-full flex items-center justify-center">
+                          {scene.segment}
+                        </span>
+                        <span className="font-bold text-[#3D2B1F] text-lg">{scene.timeRange}</span>
+                        <span className="text-sm text-[#8B7355]">配字幕：{scene.subtitle}</span>
+                      </div>
+                      {/* 中文说明 */}
+                      <div className="bg-[#FFF8F0] rounded-xl p-3 mb-3">
+                        <span className="text-xs font-bold text-[#8B7355]">中文说明</span>
+                        <p className="text-[#3D2B1F] mt-1">{scene.promptCN}</p>
+                      </div>
+                      {/* AI提示词 */}
+                      <div className="bg-[#1a1a2e] rounded-xl p-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-xs font-bold text-[#D4A853]">AI PROMPT（复制这段）</span>
+                          <CopyButton text={scene.prompt} />
+                        </div>
+                        <p className="text-[#e0e0e0] text-sm leading-relaxed font-mono">{scene.prompt}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <div className="space-y-2">
-                {result.storyboard.map((item, idx) => (
-                  <div key={idx} className="flex gap-3 items-start bg-[#FFF8F0] rounded-xl p-3">
-                    <span className="bg-[#C4704B] text-white text-sm font-bold px-2.5 py-1 rounded-lg whitespace-nowrap">
-                      {item.time}
-                    </span>
-                    <div>
-                      <div className="text-[#3D2B1F] font-medium">{item.shot}</div>
-                      <div className="text-[#8B7355] text-sm mt-0.5">配文：{item.text}</div>
+            )}
+
+            {/* ===== 宣传海报图片提示词 ===== */}
+            {resultTab === 'poster' && (
+              <div className="animate-fade-in-up">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className="text-xl font-bold text-[#3D2B1F]">宣传海报图片提示词</h3>
+                    <p className="text-sm text-[#8B7355]">可直接粘贴到Midjourney、DALL-E、Stable Diffusion等</p>
+                  </div>
+                  <CopyButton text={fullPosterPromptText} />
+                </div>
+
+                <div className="result-card">
+                  {/* 海报参数信息 */}
+                  <div className="flex gap-3 mb-4">
+                    <div className="bg-[#FFF0E0] rounded-lg px-3 py-1.5">
+                      <span className="text-xs text-[#8B7355]">风格</span>
+                      <p className="text-sm font-bold text-[#6B4226]">{result.posterPrompt.style}</p>
+                    </div>
+                    <div className="bg-[#FFF0E0] rounded-lg px-3 py-1.5">
+                      <span className="text-xs text-[#8B7355]">比例</span>
+                      <p className="text-sm font-bold text-[#6B4226]">{result.posterPrompt.aspectRatio}</p>
                     </div>
                   </div>
-                ))}
-              </div>
-            </div>
 
-            {/* 贴字幕 */}
-            <div className="result-card mb-4 animate-fade-in-up-delay-3">
-              <div className="flex items-center gap-2 mb-3">
-                <span className="text-2xl">📝</span>
-                <h3 className="text-xl font-bold text-[#3D2B1F]">贴字幕</h3>
-                <span className="text-sm text-[#8B7355]">可直接放进视频</span>
-              </div>
-              <div className="space-y-2">
-                {result.subtitles.map((sub, idx) => (
-                  <div key={idx} className="flex gap-3 items-center bg-[#FFF8F0] rounded-xl p-3">
-                    <span className="bg-[#D4A853] text-white text-sm font-bold w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0">
-                      {idx + 1}
-                    </span>
-                    <span className="text-[#3D2B1F] text-lg">{sub || '（停顿）'}</span>
+                  {/* 中文说明 */}
+                  <div className="bg-[#FFF8F0] rounded-xl p-4 mb-4">
+                    <span className="text-xs font-bold text-[#8B7355]">中文说明</span>
+                    <p className="text-[#3D2B1F] mt-1 text-lg leading-relaxed">{result.posterPrompt.promptCN}</p>
                   </div>
-                ))}
-              </div>
-            </div>
 
-            {/* 直接发 */}
-            <div className="result-card mb-6">
-              <div className="flex items-center gap-2 mb-3">
-                <span className="text-2xl">🚀</span>
-                <h3 className="text-xl font-bold text-[#3D2B1F]">直接发</h3>
-                <span className="text-sm text-[#8B7355]">抖音/视频号/小红书文案</span>
-              </div>
-              <div className="bg-[#FFF8F0] rounded-xl p-4 text-lg leading-relaxed text-[#3D2B1F] mb-3">
-                {result.publishCopy}
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {result.tags.map((tag, idx) => (
-                  <span key={idx} className="bg-[#6B8F71]/10 text-[#6B8F71] px-3 py-1 rounded-full text-sm font-medium">
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            {/* 视频生成 */}
-            <div className="result-card mb-6">
-              <div className="flex items-center gap-2 mb-3">
-                <span className="text-2xl">🎥</span>
-                <h3 className="text-xl font-bold text-[#3D2B1F]">生成视频草稿</h3>
-              </div>
-              <p className="text-[#8B7355] mb-4">
-                自动把照片和字幕合成一条15秒竖屏视频，可以直接发到短视频平台
-              </p>
-
-              {!videoUrl ? (
-                <button
-                  onClick={handleGenerateVideo}
-                  disabled={videoGenerating}
-                  className={`warm-btn w-full py-4 rounded-2xl text-xl font-bold transition-all ${
-                    videoGenerating
-                      ? 'bg-[#E8D5C4] text-[#8B7355] cursor-wait'
-                      : 'bg-[#D4A853] text-white hover:bg-[#C49843] shadow-lg'
-                  }`}
-                >
-                  {videoGenerating ? '视频生成中，请稍等...' : '生成15秒视频'}
-                </button>
-              ) : (
-                <div className="space-y-4">
-                  <div className="flex justify-center">
-                    <video
-                      src={videoUrl}
-                      controls
-                      className="rounded-xl max-h-[400px] shadow-md"
-                      style={{ aspectRatio: '9/16', maxWidth: '225px' }}
-                    />
+                  {/* AI提示词 */}
+                  <div className="bg-[#1a1a2e] rounded-xl p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-bold text-[#D4A853]">AI PROMPT（复制这段）</span>
+                      <CopyButton text={result.posterPrompt.prompt} />
+                    </div>
+                    <p className="text-[#e0e0e0] text-sm leading-relaxed font-mono">{result.posterPrompt.prompt}</p>
                   </div>
-                  <a
-                    href={videoUrl}
-                    download
-                    className="warm-btn block w-full py-4 rounded-2xl text-xl font-bold bg-[#6B8F71] text-white hover:bg-[#5A7E60] shadow-lg text-center"
-                  >
-                    下载视频草稿
-                  </a>
                 </div>
-              )}
 
-              {videoGenerating && (
-                <div className="mt-4 text-center text-[#8B7355]">
-                  <p>视频正在生成，大约需要30秒...</p>
-                  <p className="text-sm mt-1">（合成照片+字幕+转场效果）</p>
+                {/* 使用提示 */}
+                <div className="mt-4 bg-[#FFF0E0] rounded-2xl p-4 border border-[#E8D5C4]">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span>💡</span>
+                    <span className="font-bold text-[#6B4226]">使用技巧</span>
+                  </div>
+                  <ul className="text-[#6B4226] text-sm space-y-1">
+                    <li>• Midjourney：直接粘贴，末尾加 --ar 3:4 --v 6</li>
+                    <li>• DALL-E：直接粘贴到ChatGPT图片生成</li>
+                    <li>• Stable Diffusion：可作为正向提示词，建议配合权重调整</li>
+                    <li>• 提示词中的英文引号内容会被AI理解为文字标签</li>
+                  </ul>
                 </div>
-              )}
-            </div>
-
-            {/* 配音文案提示 */}
-            <div className="bg-[#FFF0E0] rounded-2xl p-4 mb-6 border border-[#E8D5C4]">
-              <div className="flex items-center gap-2 mb-2">
-                <span>💡</span>
-                <span className="font-bold text-[#6B4226]">配音文案</span>
               </div>
-              <p className="text-[#6B4226]">
-                当前视频只有字幕没有配音。你可以照着"照着说"的脚本，用手机录一段语音，再合成到视频里就更完美了！
-              </p>
-            </div>
+            )}
+
+            {/* ===== 发布文案 ===== */}
+            {resultTab === 'publish' && (
+              <div className="animate-fade-in-up">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className="text-xl font-bold text-[#3D2B1F]">发布文案</h3>
+                    <p className="text-sm text-[#8B7355]">抖音、视频号、小红书都可以直接发</p>
+                  </div>
+                  <CopyButton text={`${result.publishCopy}\n\n${result.tags.join(' ')}`} />
+                </div>
+
+                <div className="result-card">
+                  <div className="bg-[#FFF8F0] rounded-xl p-4 text-lg leading-relaxed text-[#3D2B1F] mb-4">
+                    {result.publishCopy}
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {result.tags.map((tag, idx) => (
+                      <span key={idx} className="bg-[#6B8F71]/10 text-[#6B8F71] px-3 py-1 rounded-full text-sm font-medium">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* 重新开始 */}
             <button
               onClick={handleReset}
-              className="warm-btn w-full py-4 rounded-2xl text-xl font-bold bg-[#E8D5C4] text-[#6B4226] hover:bg-[#DDD0C0]"
+              className="warm-btn w-full py-4 rounded-2xl text-xl font-bold bg-[#E8D5C4] text-[#6B4226] hover:bg-[#DDD0C0] mt-8"
             >
-              再做一条新视频
+              再做一条新的
             </button>
           </div>
         )}
       </main>
 
-      {/* 底部 */}
       <footer className="text-center py-6 text-sm text-[#C4B5A5]">
-        追风少年 · 乡村短视频生成助手 · 简单好用，人人能上手
+        乡村宣传AI助手 · 简单好用，人人能上手
       </footer>
     </div>
   );

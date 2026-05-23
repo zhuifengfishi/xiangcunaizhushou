@@ -136,7 +136,7 @@ body {
   @apply font-sans;
 }
 
-/* 追风少年自定义样式 */
+/* 乡村宣传AI助手自定义样式 */
 @keyframes typewriter {
   from { width: 0; }
   to { width: 100%; }

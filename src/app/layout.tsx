@@ -4,27 +4,27 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: {
-    default: '追风少年：乡村短视频生成助手',
-    template: '%s | 追风少年',
+    default: '乡村宣传AI助手',
+    template: '%s | 乡村宣传AI助手',
   },
   description:
-    '让不会写文案、不会拍视频的普通村民，也能快速生成一条乡村宣传短视频草稿。',
+    '选类型、填信息，一键生成AI短视频分镜提示词和宣传海报提示词，直接粘贴到AI工具就能用。',
   keywords: [
-    '乡村短视频',
-    '助农',
-    '视频生成',
     '乡村宣传',
-    '农货推广',
+    'AI提示词',
+    '短视频分镜',
+    '宣传海报',
+    '助农',
   ],
-  authors: [{ name: '追风少年' }],
+  authors: [{ name: '乡村宣传AI助手' }],
   generator: 'Coze Code',
   // icons: {
   //   icon: '',
   // },
   openGraph: {
-    title: '追风少年：乡村短视频生成助手',
+    title: '乡村宣传AI助手',
     description:
-      '我正在使用扣子编程 Vibe Coding，让创意瞬间上线。告别拖拽，拥抱心流。',
+      '选类型、填信息，一键生成AI短视频分镜提示词和宣传海报提示词。',
     url: 'https://code.coze.cn',
     siteName: '扣子编程',
     locale: 'zh_CN',
