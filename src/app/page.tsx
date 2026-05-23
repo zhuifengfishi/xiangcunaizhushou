@@ -16,7 +16,9 @@ interface FormData {
 
 interface GenerateResult {
   videoPrompt: string;
+  videoPromptPrivate: string;
   posterPrompt: string;
+  posterPromptPrivate: string;
   posterStyle: string;
   posterAspectRatio: string;
   publishCopy: string;
@@ -165,6 +167,30 @@ function CopyButton({ text, label }: { text: string; label?: string }) {
   );
 }
 
+// ========== 公域/私域切换标签 ==========
+function TrafficToggle({ value, onChange }: { value: 'public' | 'private'; onChange: (v: 'public' | 'private') => void }) {
+  return (
+    <div className="flex bg-[#F5E6D8] rounded-xl p-1 mb-4">
+      <button
+        onClick={() => onChange('public')}
+        className={`flex-1 py-2.5 rounded-lg text-base font-bold transition-all ${
+          value === 'public' ? 'bg-[#C4704B] text-white shadow-md' : 'text-[#8B7355] hover:text-[#6B4226]'
+        }`}
+      >
+        公域获客引流
+      </button>
+      <button
+        onClick={() => onChange('private')}
+        className={`flex-1 py-2.5 rounded-lg text-base font-bold transition-all ${
+          value === 'private' ? 'bg-[#6B8F71] text-white shadow-md' : 'text-[#8B7355] hover:text-[#6B4226]'
+        }`}
+      >
+        私域流量转化
+      </button>
+    </div>
+  );
+}
+
 // ========== 主组件 ==========
 export default function HomePage() {
   const [step, setStep] = useState(1);
@@ -177,6 +203,7 @@ export default function HomePage() {
   const [generating, setGenerating] = useState(false);
   const [result, setResult] = useState<GenerateResult | null>(null);
   const [resultTab, setResultTab] = useState<'video' | 'poster' | 'publish'>('video');
+  const [trafficMode, setTrafficMode] = useState<'public' | 'private'>('public');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const progress = step <= 4 ? ((step - 1) / 3) * 100 : 100;
@@ -225,6 +252,7 @@ export default function HomePage() {
     setGenerating(true);
     setResult(null);
     setResultTab('video');
+    setTrafficMode('public');
 
     try {
       const res = await fetch('/api/generate', {
@@ -263,7 +291,21 @@ export default function HomePage() {
     setPhotoPreviews([]);
     setResult(null);
     setResultTab('video');
+    setTrafficMode('public');
   }, [photoPreviews]);
+
+  // 获取当前提示词文本
+  const getCurrentPrompt = useCallback((): string => {
+    if (!result) return '';
+    const isPublic = trafficMode === 'public';
+    if (resultTab === 'video') {
+      return isPublic ? result.videoPrompt : result.videoPromptPrivate;
+    }
+    if (resultTab === 'poster') {
+      return isPublic ? result.posterPrompt : result.posterPromptPrivate;
+    }
+    return `${result.publishCopy}\n\n${result.tags.join(' ')}`;
+  }, [result, resultTab, trafficMode]);
 
   return (
     <div className="min-h-screen bg-[#FFF8F0]">
@@ -527,17 +569,30 @@ export default function HomePage() {
 
             {/* 生成说明 */}
             <div className="bg-[#FFF0E0] rounded-2xl p-4 mb-6 border border-[#E8D5C4]">
-              <div className="font-bold text-[#6B4226] mb-2">生成后会给你两版提示词：</div>
-              <div className="flex gap-4">
-                <div className="flex-1 bg-white rounded-xl p-3 border border-[#E8D5C4]">
-                  <div className="text-lg mb-1">🎬</div>
-                  <div className="font-bold text-[#3D2B1F] text-sm">AI短视频分镜提示词</div>
-                  <div className="text-xs text-[#8B7355]">你本人出镜参与，直接粘贴到Sora、可灵等</div>
+              <div className="font-bold text-[#6B4226] mb-2">生成后会给你两版提示词，每版再分公域/私域：</div>
+              <div className="space-y-2">
+                <div className="flex gap-3">
+                  <div className="flex-1 bg-white rounded-xl p-3 border border-[#E8D5C4]">
+                    <div className="text-lg mb-1">🎬</div>
+                    <div className="font-bold text-[#3D2B1F] text-sm">AI短视频分镜提示词</div>
+                    <div className="text-xs text-[#8B7355]">你本人出镜参与，直接粘贴到Sora、可灵等</div>
+                  </div>
+                  <div className="flex-1 bg-white rounded-xl p-3 border border-[#E8D5C4]">
+                    <div className="text-lg mb-1">🖼️</div>
+                    <div className="font-bold text-[#3D2B1F] text-sm">宣传海报图片提示词</div>
+                    <div className="text-xs text-[#8B7355]">你本人出镜，直接粘贴到Midjourney、DALL-E等</div>
+                  </div>
                 </div>
-                <div className="flex-1 bg-white rounded-xl p-3 border border-[#E8D5C4]">
-                  <div className="text-lg mb-1">🖼️</div>
-                  <div className="font-bold text-[#3D2B1F] text-sm">宣传海报图片提示词</div>
-                  <div className="text-xs text-[#8B7355]">你本人出镜，直接粘贴到Midjourney、DALL-E等</div>
+                <div className="bg-white rounded-xl p-3 border border-[#E8D5C4]">
+                  <div className="font-bold text-[#3D2B1F] text-sm mb-1">每版提示词再分两种：</div>
+                  <div className="flex gap-2 text-xs">
+                    <span className="bg-[#C4704B]/10 text-[#C4704B] px-2 py-1 rounded font-bold">公域获客引流</span>
+                    <span className="text-[#8B7355]">无联系方式，只留地址和品牌</span>
+                  </div>
+                  <div className="flex gap-2 text-xs mt-1">
+                    <span className="bg-[#6B8F71]/10 text-[#6B8F71] px-2 py-1 rounded font-bold">私域流量转化</span>
+                    <span className="text-[#8B7355]">含联系方式，方便直接联系</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -566,10 +621,10 @@ export default function HomePage() {
             <p className="text-[#8B7355] mb-6 text-lg">复制下面的提示词，粘贴到AI工具里就能用</p>
 
             {/* 三个Tab切换 */}
-            <div className="flex gap-2 mb-6">
+            <div className="flex gap-2 mb-4">
               <button
                 onClick={() => setResultTab('video')}
-                className={`warm-btn flex-1 py-3 rounded-xl text-lg font-bold transition-all ${
+                className={`warm-btn flex-1 py-3 rounded-xl text-base font-bold transition-all ${
                   resultTab === 'video' ? 'bg-[#C4704B] text-white shadow-md' : 'bg-white text-[#6B4226] border border-[#E8D5C4]'
                 }`}
               >
@@ -577,7 +632,7 @@ export default function HomePage() {
               </button>
               <button
                 onClick={() => setResultTab('poster')}
-                className={`warm-btn flex-1 py-3 rounded-xl text-lg font-bold transition-all ${
+                className={`warm-btn flex-1 py-3 rounded-xl text-base font-bold transition-all ${
                   resultTab === 'poster' ? 'bg-[#C4704B] text-white shadow-md' : 'bg-white text-[#6B4226] border border-[#E8D5C4]'
                 }`}
               >
@@ -585,7 +640,7 @@ export default function HomePage() {
               </button>
               <button
                 onClick={() => setResultTab('publish')}
-                className={`warm-btn flex-1 py-3 rounded-xl text-lg font-bold transition-all ${
+                className={`warm-btn flex-1 py-3 rounded-xl text-base font-bold transition-all ${
                   resultTab === 'publish' ? 'bg-[#C4704B] text-white shadow-md' : 'bg-white text-[#6B4226] border border-[#E8D5C4]'
                 }`}
               >
@@ -602,17 +657,29 @@ export default function HomePage() {
                     <p className="text-sm text-[#8B7355] mt-1">完整一段，可直接粘贴到 Sora、可灵、Runway 等视频生成工具</p>
                   </div>
 
+                  {/* 公域/私域切换 */}
+                  <TrafficToggle value={trafficMode} onChange={setTrafficMode} />
+
+                  {/* 当前版本说明 */}
+                  <div className={`text-sm px-3 py-2 rounded-lg mb-4 ${trafficMode === 'public' ? 'bg-[#C4704B]/10 text-[#C4704B]' : 'bg-[#6B8F71]/10 text-[#6B8F71]'}`}>
+                    {trafficMode === 'public' 
+                      ? '📢 公域获客引流版：不包含联系方式、电话号码、二维码，只保留地址和品牌信息，适合发到抖音、视频号等公域平台吸引流量'
+                      : '💬 私域流量转化版：包含联系方式，适合发到微信群、朋友圈、小红书私信等私域场景促成转化'}
+                  </div>
+
                   {/* AI提示词 - 深色代码区 */}
                   <div className="bg-[#1a1a2e] rounded-xl p-5 mb-5">
                     <div className="flex items-center justify-between mb-3">
-                      <span className="text-xs font-bold text-[#D4A853]">提示词（完整版，一键复制）</span>
-                      <span className="text-xs text-[#8B8BA0]">{result.videoPrompt.length}字</span>
+                      <span className="text-xs font-bold text-[#D4A853]">
+                        提示词（{trafficMode === 'public' ? '公域引流版' : '私域转化版'}，一键复制）
+                      </span>
+                      <span className="text-xs text-[#8B8BA0]">{getCurrentPrompt().length}字</span>
                     </div>
-                    <p className="text-[#e0e0e0] text-base leading-[1.8] whitespace-pre-wrap">{result.videoPrompt}</p>
+                    <p className="text-[#e0e0e0] text-base leading-[1.8] whitespace-pre-wrap">{getCurrentPrompt()}</p>
                   </div>
 
                   {/* 一键复制大按钮 */}
-                  <CopyButton text={result.videoPrompt} label="一键复制短视频提示词" />
+                  <CopyButton text={getCurrentPrompt()} label={trafficMode === 'public' ? '一键复制（公域引流版）' : '一键复制（私域转化版）'} />
                 </div>
 
                 {/* 使用提示 */}
@@ -622,11 +689,12 @@ export default function HomePage() {
                     <span className="font-bold text-[#6B4226]">使用方法</span>
                   </div>
                   <ul className="text-[#6B4226] text-sm space-y-1">
+                    <li>• 公域引流版：发到抖音、视频号、快手等公开平台，吸引关注和私信</li>
+                    <li>• 私域转化版：发到微信群、朋友圈、小红书私信，方便用户直接联系你</li>
                     <li>• 点击上方按钮复制完整提示词</li>
                     <li>• 打开 Sora / 可灵 / Runway 等视频生成工具</li>
                     <li>• 粘贴提示词，设置比例为 9:16（竖屏），即可生成</li>
                     <li>• 如有上传照片，可在支持图片参考的工具中同时上传</li>
-                    <li>• 提示词中"你"代表出镜人物，视频工具会根据描述生成对应画面</li>
                   </ul>
                 </div>
               </div>
@@ -639,6 +707,16 @@ export default function HomePage() {
                   <div className="mb-4">
                     <h3 className="text-xl font-bold text-[#3D2B1F]">宣传海报图片提示词</h3>
                     <p className="text-sm text-[#8B7355] mt-1">完整一段，可直接粘贴到 Midjourney、DALL-E、Stable Diffusion 等</p>
+                  </div>
+
+                  {/* 公域/私域切换 */}
+                  <TrafficToggle value={trafficMode} onChange={setTrafficMode} />
+
+                  {/* 当前版本说明 */}
+                  <div className={`text-sm px-3 py-2 rounded-lg mb-4 ${trafficMode === 'public' ? 'bg-[#C4704B]/10 text-[#C4704B]' : 'bg-[#6B8F71]/10 text-[#6B8F71]'}`}>
+                    {trafficMode === 'public' 
+                      ? '📢 公域获客引流版：海报中不包含联系方式、电话号码、二维码，只保留地址和品牌信息'
+                      : '💬 私域流量转化版：海报底部包含联系方式，方便用户扫码或拨打电话'}
                   </div>
 
                   {/* 海报参数 */}
@@ -656,14 +734,16 @@ export default function HomePage() {
                   {/* AI提示词 - 深色代码区 */}
                   <div className="bg-[#1a1a2e] rounded-xl p-5 mb-5">
                     <div className="flex items-center justify-between mb-3">
-                      <span className="text-xs font-bold text-[#D4A853]">提示词（完整版，一键复制）</span>
-                      <span className="text-xs text-[#8B8BA0]">{result.posterPrompt.length}字</span>
+                      <span className="text-xs font-bold text-[#D4A853]">
+                        提示词（{trafficMode === 'public' ? '公域引流版' : '私域转化版'}，一键复制）
+                      </span>
+                      <span className="text-xs text-[#8B8BA0]">{getCurrentPrompt().length}字</span>
                     </div>
-                    <p className="text-[#e0e0e0] text-base leading-[1.8] whitespace-pre-wrap">{result.posterPrompt}</p>
+                    <p className="text-[#e0e0e0] text-base leading-[1.8] whitespace-pre-wrap">{getCurrentPrompt()}</p>
                   </div>
 
                   {/* 一键复制大按钮 */}
-                  <CopyButton text={result.posterPrompt} label="一键复制海报提示词" />
+                  <CopyButton text={getCurrentPrompt()} label={trafficMode === 'public' ? '一键复制（公域引流版）' : '一键复制（私域转化版）'} />
                 </div>
 
                 {/* 使用提示 */}
@@ -673,11 +753,11 @@ export default function HomePage() {
                     <span className="font-bold text-[#6B4226]">使用方法</span>
                   </div>
                   <ul className="text-[#6B4226] text-sm space-y-1">
-                    <li>• 点击上方按钮复制完整提示词</li>
+                    <li>• 公域引流版：发到公域平台做曝光，不含联系方式避免被限流</li>
+                    <li>• 私域转化版：发到私域场景，含联系方式方便用户找到你</li>
                     <li>• Midjourney：粘贴后末尾加 --ar 3:4 --v 6</li>
                     <li>• DALL-E：直接粘贴到图片生成对话框</li>
-                    <li>• Stable Diffusion：作为正向提示词，建议配合权重调整</li>
-                    <li>• 如有上传照片，可在支持图片参考的工具中同时上传作为风格参考</li>
+                    <li>• 如有上传照片，可在支持图片参考的工具中同时上传</li>
                   </ul>
                 </div>
               </div>

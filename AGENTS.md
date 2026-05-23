@@ -2,7 +2,7 @@
 
 ## 项目概览
 
-面向村民的极简AI提示词生成工具。4步流程：选类型→填信息→传照片→生成。输出两版AI提示词（短视频分镜+海报图片），可直接粘贴到Sora/可灵/Midjourney/DALL-E等工具使用。
+面向村民的极简AI提示词生成工具。4步流程：选类型→填信息→传照片→生成。输出两版AI提示词（短视频分镜+海报图片），每版再分公域引流/私域转化两种，可直接粘贴到Sora/可灵/Midjourney/DALL-E等工具使用。
 
 ## 版本技术栈
 
@@ -45,13 +45,15 @@
 
 1. **POST /api/generate** - 生成AI提示词（短视频分镜+海报图片+发布文案+标签）
    - 参数：type, formData, photoCount, localCase, localDirection
-   - 返回：videoPrompt, posterPrompt, posterStyle, posterAspectRatio, publishCopy, tags
+   - 返回：videoPrompt(公域), videoPromptPrivate(私域), posterPrompt(公域), posterPromptPrivate(私域), posterStyle, posterAspectRatio, publishCopy, tags
 
 ## 核心生成逻辑
 
 - `data/templates.ts` 包含5种场景模板的生成规则
-- 每种模板有：videoPromptGenerator, posterGenerator, publishTemplate, tagsTemplate
+- 每种模板有：videoPromptGenerator(公域), videoPromptPrivateGenerator(私域), posterGenerator(公域), posterPrivateGenerator(私域), publishTemplate, tagsTemplate
 - 短视频提示词：一段完整中文描述（450字以内，5段场景3秒分镜，强调人物出镜参与，只有旁白配音不要出现字幕和文字），可直接粘贴到Sora/可灵/Runway
+- 公域引流版：不含联系方式、电话号码、二维码，只保留地址和品牌信息
+- 私域转化版：包含联系方式，方便用户直接联系
 - 海报提示词：一段完整中文描述（构图+背景+配色+人物出镜+风格），可直接粘贴到Midjourney/DALL-E/SD
 - 照片参考：上传的照片数量会作为参考信息融入提示词（photoDesc）
 - 地方案例：屏南县、熙岭乡、四坪村、龙潭古镇（兼容"龙塘古镇"）
