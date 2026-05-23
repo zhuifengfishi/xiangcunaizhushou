@@ -14,24 +14,13 @@ interface FormData {
   slogan: string;
 }
 
-interface VideoScenePrompt {
-  segment: number;
-  timeRange: string;
-  prompt: string;
-  promptCN: string;
-  subtitle: string;
-}
-
-interface PosterPrompt {
-  prompt: string;
-  promptCN: string;
-  style: string;
-  aspectRatio: string;
-}
-
 interface GenerateResult {
-  videoPrompts: VideoScenePrompt[];
-  posterPrompt: PosterPrompt;
+  videoPrompt: string;
+  videoPromptCN: string;
+  posterPrompt: string;
+  posterPromptCN: string;
+  posterStyle: string;
+  posterAspectRatio: string;
   publishCopy: string;
   tags: string[];
 }
@@ -145,7 +134,7 @@ const FORM_FIELDS: { key: keyof FormData; label: string; placeholder: string; mu
 const emptyFormData: FormData = { name: '', highlights: '', price: '', location: '', contact: '', slogan: '' };
 
 // ========== 复制按钮组件 ==========
-function CopyButton({ text }: { text: string }) {
+function CopyButton({ text, label }: { text: string; label?: string }) {
   const [copied, setCopied] = useState(false);
   const handleCopy = useCallback(async () => {
     try {
@@ -153,7 +142,6 @@ function CopyButton({ text }: { text: string }) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      // fallback
       const ta = document.createElement('textarea');
       ta.value = text;
       document.body.appendChild(ta);
@@ -168,13 +156,13 @@ function CopyButton({ text }: { text: string }) {
   return (
     <button
       onClick={handleCopy}
-      className={`warm-btn text-sm px-3 py-1.5 rounded-lg font-medium transition-all ${
+      className={`warm-btn px-5 py-2.5 rounded-xl font-bold text-lg transition-all ${
         copied
-          ? 'bg-[#6B8F71] text-white'
-          : 'bg-[#FFF0E0] text-[#C4704B] hover:bg-[#C4704B] hover:text-white'
+          ? 'bg-[#6B8F71] text-white shadow-md'
+          : 'bg-[#C4704B] text-white hover:bg-[#A85A38] shadow-md'
       }`}
     >
-      {copied ? '已复制 ✓' : '复制提示词'}
+      {copied ? '已复制 ✓' : (label || '一键复制')}
     </button>
   );
 }
@@ -279,18 +267,6 @@ export default function HomePage() {
     setResultTab('video');
   }, [photoPreviews]);
 
-  // 拼接完整视频提示词文本（用于一键复制）
-  const fullVideoPromptText = result
-    ? result.videoPrompts.map(s =>
-        `【第${s.segment}段 ${s.timeRange}】\n中文说明：${s.promptCN}\nAI提示词：${s.prompt}\n配字幕：${s.subtitle}`
-      ).join('\n\n')
-    : '';
-
-  // 海报提示词文本
-  const fullPosterPromptText = result
-    ? `宣传海报AI提示词：\n${result.posterPrompt.prompt}\n\n中文说明：${result.posterPrompt.promptCN}\n推荐风格：${result.posterPrompt.style}\n推荐比例：${result.posterPrompt.aspectRatio}`
-    : '';
-
   return (
     <div className="min-h-screen bg-[#FFF8F0]">
       {/* 顶部标题栏 */}
@@ -358,7 +334,7 @@ export default function HomePage() {
                   <div key={lc.key} className="bg-white rounded-2xl border border-[#E8D5C4] p-4">
                     <div className="font-bold text-[#3D2B1F] text-lg mb-3">
                       {lc.label}
-                      {lc.aliases && <span className="text-sm text-[#8B7355] font-normal ml-2">（输入"{lc.aliases[0]}"也行）</span>}
+                      {lc.aliases && <span className="text-sm text-[#8B7355] font-normal ml-2">（输入&quot;{lc.aliases[0]}&quot;也行）</span>}
                     </div>
                     <div className="flex flex-wrap gap-2">
                       {lc.directions.map(dir => (
@@ -472,11 +448,12 @@ export default function HomePage() {
           </div>
         )}
 
-        {/* ===== 步骤3：传照片 ===== */}
+        {/* ===== 步骤3：传照片（作为整体参考） ===== */}
         {step === 3 && (
           <div className="animate-fade-in-up">
             <h2 className="text-2xl font-bold text-[#3D2B1F] mb-2">传几张照片</h2>
-            <p className="text-[#8B7355] mb-6 text-lg">手机里已有的照片就可以，不要求会拍大片</p>
+            <p className="text-[#8B7355] mb-2 text-lg">手机里已有的照片就可以，不要求会拍大片</p>
+            <p className="text-[#C4704B] mb-6 text-base">上传的照片会作为整体参考，帮助生成更贴合你实际情况的提示词</p>
 
             <div className="grid grid-cols-3 gap-3 mb-4">
               {photoPreviews.map((preview, idx) => (
@@ -545,8 +522,8 @@ export default function HomePage() {
                 </div>
               ) : null)}
               <div>
-                <span className="text-sm font-bold text-[#8B7355]">照片：</span>
-                <span className="text-[#3D2B1F]">{photos.length} 张</span>
+                <span className="text-sm font-bold text-[#8B7355]">照片参考：</span>
+                <span className="text-[#3D2B1F]">{photos.length} 张{photos.length > 0 ? '（会作为整体参考融入提示词）' : '（未上传）'}</span>
               </div>
             </div>
 
@@ -557,12 +534,12 @@ export default function HomePage() {
                 <div className="flex-1 bg-white rounded-xl p-3 border border-[#E8D5C4]">
                   <div className="text-lg mb-1">🎬</div>
                   <div className="font-bold text-[#3D2B1F] text-sm">AI短视频分镜提示词</div>
-                  <div className="text-xs text-[#8B7355]">5段场景，直接粘贴到Sora、可灵等</div>
+                  <div className="text-xs text-[#8B7355]">完整一段，直接粘贴到Sora、可灵等</div>
                 </div>
                 <div className="flex-1 bg-white rounded-xl p-3 border border-[#E8D5C4]">
                   <div className="text-lg mb-1">🖼️</div>
                   <div className="font-bold text-[#3D2B1F] text-sm">宣传海报图片提示词</div>
-                  <div className="text-xs text-[#8B7355]">直接粘贴到Midjourney、DALL-E等</div>
+                  <div className="text-xs text-[#8B7355]">完整一段，直接粘贴到Midjourney、DALL-E等</div>
                 </div>
               </div>
             </div>
@@ -618,98 +595,106 @@ export default function HomePage() {
               </button>
             </div>
 
-            {/* ===== AI短视频分镜提示词 ===== */}
+            {/* ===== AI短视频完整提示词 ===== */}
             {resultTab === 'video' && (
               <div className="animate-fade-in-up">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <h3 className="text-xl font-bold text-[#3D2B1F]">AI短视频分镜提示词</h3>
-                    <p className="text-sm text-[#8B7355]">5段场景，每段3秒，可直接粘贴到Sora、可灵、Runway等</p>
-                  </div>
-                  <CopyButton text={fullVideoPromptText} />
-                </div>
-
-                <div className="space-y-4">
-                  {result.videoPrompts.map((scene) => (
-                    <div key={scene.segment} className="result-card">
-                      {/* 段落标题 */}
-                      <div className="flex items-center gap-3 mb-3">
-                        <span className="bg-[#C4704B] text-white text-sm font-bold w-8 h-8 rounded-full flex items-center justify-center">
-                          {scene.segment}
-                        </span>
-                        <span className="font-bold text-[#3D2B1F] text-lg">{scene.timeRange}</span>
-                        <span className="text-sm text-[#8B7355]">配字幕：{scene.subtitle}</span>
-                      </div>
-                      {/* 中文说明 */}
-                      <div className="bg-[#FFF8F0] rounded-xl p-3 mb-3">
-                        <span className="text-xs font-bold text-[#8B7355]">中文说明</span>
-                        <p className="text-[#3D2B1F] mt-1">{scene.promptCN}</p>
-                      </div>
-                      {/* AI提示词 */}
-                      <div className="bg-[#1a1a2e] rounded-xl p-4">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-xs font-bold text-[#D4A853]">AI PROMPT（复制这段）</span>
-                          <CopyButton text={scene.prompt} />
-                        </div>
-                        <p className="text-[#e0e0e0] text-sm leading-relaxed font-mono">{scene.prompt}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* ===== 宣传海报图片提示词 ===== */}
-            {resultTab === 'poster' && (
-              <div className="animate-fade-in-up">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <h3 className="text-xl font-bold text-[#3D2B1F]">宣传海报图片提示词</h3>
-                    <p className="text-sm text-[#8B7355]">可直接粘贴到Midjourney、DALL-E、Stable Diffusion等</p>
-                  </div>
-                  <CopyButton text={fullPosterPromptText} />
-                </div>
-
                 <div className="result-card">
-                  {/* 海报参数信息 */}
-                  <div className="flex gap-3 mb-4">
-                    <div className="bg-[#FFF0E0] rounded-lg px-3 py-1.5">
-                      <span className="text-xs text-[#8B7355]">风格</span>
-                      <p className="text-sm font-bold text-[#6B4226]">{result.posterPrompt.style}</p>
-                    </div>
-                    <div className="bg-[#FFF0E0] rounded-lg px-3 py-1.5">
-                      <span className="text-xs text-[#8B7355]">比例</span>
-                      <p className="text-sm font-bold text-[#6B4226]">{result.posterPrompt.aspectRatio}</p>
+                  {/* 标题区 */}
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h3 className="text-xl font-bold text-[#3D2B1F]">AI短视频分镜提示词</h3>
+                      <p className="text-sm text-[#8B7355] mt-1">完整一段，可直接粘贴到 Sora、可灵、Runway 等视频生成工具</p>
                     </div>
                   </div>
 
                   {/* 中文说明 */}
-                  <div className="bg-[#FFF8F0] rounded-xl p-4 mb-4">
+                  <div className="bg-[#FFF8F0] rounded-xl p-4 mb-4 border border-[#E8D5C4]">
                     <span className="text-xs font-bold text-[#8B7355]">中文说明</span>
-                    <p className="text-[#3D2B1F] mt-1 text-lg leading-relaxed">{result.posterPrompt.promptCN}</p>
+                    <p className="text-[#3D2B1F] mt-1 text-base leading-relaxed">{result.videoPromptCN}</p>
                   </div>
 
-                  {/* AI提示词 */}
-                  <div className="bg-[#1a1a2e] rounded-xl p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-bold text-[#D4A853]">AI PROMPT（复制这段）</span>
-                      <CopyButton text={result.posterPrompt.prompt} />
+                  {/* AI提示词 - 深色代码区 */}
+                  <div className="bg-[#1a1a2e] rounded-xl p-5 mb-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-xs font-bold text-[#D4A853]">AI PROMPT（完整版，一键复制）</span>
                     </div>
-                    <p className="text-[#e0e0e0] text-sm leading-relaxed font-mono">{result.posterPrompt.prompt}</p>
+                    <p className="text-[#e0e0e0] text-sm leading-relaxed font-mono whitespace-pre-wrap">{result.videoPrompt}</p>
                   </div>
+
+                  {/* 一键复制大按钮 */}
+                  <CopyButton text={result.videoPrompt} label="一键复制短视频提示词" />
                 </div>
 
                 {/* 使用提示 */}
                 <div className="mt-4 bg-[#FFF0E0] rounded-2xl p-4 border border-[#E8D5C4]">
                   <div className="flex items-center gap-2 mb-2">
                     <span>💡</span>
-                    <span className="font-bold text-[#6B4226]">使用技巧</span>
+                    <span className="font-bold text-[#6B4226]">使用方法</span>
                   </div>
                   <ul className="text-[#6B4226] text-sm space-y-1">
-                    <li>• Midjourney：直接粘贴，末尾加 --ar 3:4 --v 6</li>
-                    <li>• DALL-E：直接粘贴到ChatGPT图片生成</li>
-                    <li>• Stable Diffusion：可作为正向提示词，建议配合权重调整</li>
-                    <li>• 提示词中的英文引号内容会被AI理解为文字标签</li>
+                    <li>• 点击上方按钮复制完整提示词</li>
+                    <li>• 打开 Sora / 可灵 / Runway 等视频生成工具</li>
+                    <li>• 粘贴提示词，设置比例为 9:16（竖屏），即可生成</li>
+                    <li>• 如有上传照片，可在支持图片参考的工具中同时上传</li>
+                  </ul>
+                </div>
+              </div>
+            )}
+
+            {/* ===== 宣传海报完整提示词 ===== */}
+            {resultTab === 'poster' && (
+              <div className="animate-fade-in-up">
+                <div className="result-card">
+                  {/* 标题区 */}
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h3 className="text-xl font-bold text-[#3D2B1F]">宣传海报图片提示词</h3>
+                      <p className="text-sm text-[#8B7355] mt-1">完整一段，可直接粘贴到 Midjourney、DALL-E、Stable Diffusion 等</p>
+                    </div>
+                  </div>
+
+                  {/* 海报参数 */}
+                  <div className="flex gap-3 mb-4">
+                    <div className="bg-[#FFF0E0] rounded-lg px-3 py-1.5">
+                      <span className="text-xs text-[#8B7355]">风格</span>
+                      <p className="text-sm font-bold text-[#6B4226]">{result.posterStyle}</p>
+                    </div>
+                    <div className="bg-[#FFF0E0] rounded-lg px-3 py-1.5">
+                      <span className="text-xs text-[#8B7355]">比例</span>
+                      <p className="text-sm font-bold text-[#6B4226]">{result.posterAspectRatio}</p>
+                    </div>
+                  </div>
+
+                  {/* 中文说明 */}
+                  <div className="bg-[#FFF8F0] rounded-xl p-4 mb-4 border border-[#E8D5C4]">
+                    <span className="text-xs font-bold text-[#8B7355]">中文说明</span>
+                    <p className="text-[#3D2B1F] mt-1 text-base leading-relaxed">{result.posterPromptCN}</p>
+                  </div>
+
+                  {/* AI提示词 - 深色代码区 */}
+                  <div className="bg-[#1a1a2e] rounded-xl p-5 mb-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-xs font-bold text-[#D4A853]">AI PROMPT（完整版，一键复制）</span>
+                    </div>
+                    <p className="text-[#e0e0e0] text-sm leading-relaxed font-mono whitespace-pre-wrap">{result.posterPrompt}</p>
+                  </div>
+
+                  {/* 一键复制大按钮 */}
+                  <CopyButton text={result.posterPrompt} label="一键复制海报提示词" />
+                </div>
+
+                {/* 使用提示 */}
+                <div className="mt-4 bg-[#FFF0E0] rounded-2xl p-4 border border-[#E8D5C4]">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span>💡</span>
+                    <span className="font-bold text-[#6B4226]">使用方法</span>
+                  </div>
+                  <ul className="text-[#6B4226] text-sm space-y-1">
+                    <li>• 点击上方按钮复制完整提示词</li>
+                    <li>• Midjourney：粘贴后末尾加 --ar 3:4 --v 6</li>
+                    <li>• DALL-E：直接粘贴到图片生成对话框</li>
+                    <li>• Stable Diffusion：作为正向提示词，建议配合权重调整</li>
+                    <li>• 如有上传照片，可在支持图片参考的工具中同时上传作为风格参考</li>
                   </ul>
                 </div>
               </div>
@@ -718,25 +703,26 @@ export default function HomePage() {
             {/* ===== 发布文案 ===== */}
             {resultTab === 'publish' && (
               <div className="animate-fade-in-up">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <h3 className="text-xl font-bold text-[#3D2B1F]">发布文案</h3>
-                    <p className="text-sm text-[#8B7355]">抖音、视频号、小红书都可以直接发</p>
-                  </div>
-                  <CopyButton text={`${result.publishCopy}\n\n${result.tags.join(' ')}`} />
-                </div>
-
                 <div className="result-card">
-                  <div className="bg-[#FFF8F0] rounded-xl p-4 text-lg leading-relaxed text-[#3D2B1F] mb-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h3 className="text-xl font-bold text-[#3D2B1F]">发布文案</h3>
+                      <p className="text-sm text-[#8B7355]">抖音、视频号、小红书都可以直接发</p>
+                    </div>
+                  </div>
+
+                  <div className="bg-[#FFF8F0] rounded-xl p-4 text-lg leading-relaxed text-[#3D2B1F] mb-4 border border-[#E8D5C4]">
                     {result.publishCopy}
                   </div>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-2 mb-4">
                     {result.tags.map((tag, idx) => (
                       <span key={idx} className="bg-[#6B8F71]/10 text-[#6B8F71] px-3 py-1 rounded-full text-sm font-medium">
                         {tag}
                       </span>
                     ))}
                   </div>
+
+                  <CopyButton text={`${result.publishCopy}\n\n${result.tags.join(' ')}`} label="一键复制发布文案" />
                 </div>
               </div>
             )}

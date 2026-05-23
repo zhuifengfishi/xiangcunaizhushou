@@ -45,14 +45,15 @@
 
 1. **POST /api/generate** - 生成AI提示词（短视频分镜+海报图片+发布文案+标签）
    - 参数：type, formData, photoCount, localCase, localDirection
-   - 返回：videoPrompts(5段), posterPrompt, publishCopy, tags
+   - 返回：videoPrompt, videoPromptCN, posterPrompt, posterPromptCN, posterStyle, posterAspectRatio, publishCopy, tags
 
 ## 核心生成逻辑
 
 - `data/templates.ts` 包含5种场景模板的生成规则
-- 每种模板有：videoSceneGenerator, posterGenerator, publishTemplate, tagsTemplate
-- 视频分镜：5段场景，每段包含英文AI提示词+中文说明+配字幕
-- 海报提示词：英文AI提示词+中文说明+推荐风格+推荐比例
+- 每种模板有：videoPromptGenerator, posterGenerator, publishTemplate, tagsTemplate
+- 短视频提示词：一段完整英文描述（包含5段场景3秒分镜+转场+整体风格），可直接粘贴到Sora/可灵/Runway
+- 海报提示词：一段完整英文描述（构图+背景+配色+文字+风格），可直接粘贴到Midjourney/DALL-E/SD
+- 照片参考：上传的照片数量会作为参考信息融入提示词（photoDesc）
 - 地方案例：屏南县、熙岭乡、四坪村、龙潭古镇（兼容"龙塘古镇"）
 
 ## 设计规范
@@ -62,10 +63,12 @@
 - 大按钮、大输入框、无术语
 - 手机和电脑适配
 - 提示词展示区用深色背景(#1a1a2e)，与浅色页面形成对比
-- 每段提示词都有"复制提示词"按钮
+- 每版提示词都有"一键复制"大按钮
 
 ## 开发注意事项
 
 - 离线可用，所有生成逻辑基于本地模板
 - 不依赖外部AI服务（如需AI增强可后续接入）
 - 龙潭古镇的别名"龙塘古镇"需兼容显示
+- 提示词是完整的汇总文本，不再分段展示
+- 上传照片作为整体参考融入提示词生成
