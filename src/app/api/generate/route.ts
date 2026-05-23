@@ -1,21 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { generateContent, TemplateType, FormData } from '../../../../data/templates';
+import { generate, type TemplateType, type FormData } from '@/lib/templates';
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { type, formData, photoCount = 0, localCase, localDirection } = body;
+    const { type, formData, photoCount, localCase, localDirection } = body;
 
     if (!type || !formData) {
-      return NextResponse.json({ error: '缺少必要参数' }, { status: 400 });
+      return NextResponse.json({ error: '缺少必填参数' }, { status: 400 });
     }
 
-    const result = generateContent(
+    const result = generate(
       type as TemplateType,
       formData as FormData,
-      photoCount as number,
-      localCase as string | undefined,
-      localDirection as string | undefined,
+      photoCount || 0,
+      localCase || '',
+      localDirection || '',
     );
 
     return NextResponse.json({ success: true, data: result });

@@ -14,15 +14,27 @@ interface FormData {
   slogan: string;
 }
 
+interface PosterStyleOption {
+  key: string;
+  label: string;
+  desc: string;
+  icon: string;
+}
+
+interface PublishStyleOption {
+  key: string;
+  label: string;
+  desc: string;
+  icon: string;
+}
+
 interface GenerateResult {
   videoPrompt: string;
   videoPromptPrivate: string;
-  posterPrompt: string;
-  posterPromptPrivate: string;
-  posterStyle: string;
-  posterAspectRatio: string;
-  publishCopy: string;
-  tags: string[];
+  posterStyles: PosterStyleOption[];
+  posterPrompts: Record<string, { prompt: string; promptPrivate: string; aspectRatio: string }>;
+  publishStyles: PublishStyleOption[];
+  publishCopies: Record<string, { copy: string; copyPrivate: string; tags: string[] }>;
 }
 
 interface DemoCase {
@@ -33,16 +45,16 @@ interface DemoCase {
   formData: FormData;
 }
 
-// ========== 常量配置 ==========
-const TYPE_OPTIONS: { type: TemplateType; label: string; icon: string; desc: string }[] = [
-  { type: 'rural-goods', label: '卖农货', icon: '🍊', desc: '水果、茶叶、蜂蜜、腊味...' },
-  { type: 'homestay', label: '推民宿', icon: '🏡', desc: '民宿、古村、露营、避暑...' },
-  { type: 'rural-food', label: '发饭店', icon: '🍲', desc: '农家菜、土灶饭、小吃...' },
-  { type: 'craft', label: '秀手艺', icon: '🎭', desc: '戏曲、酿造、木作、编织...' },
-  { type: 'village-event', label: '宣传村子', icon: '🎊', desc: '丰收节、市集、民俗表演...' },
+// ========== 常量 ==========
+const TYPE_OPTIONS: { type: TemplateType; icon: string; label: string; desc: string }[] = [
+  { type: 'rural-goods', icon: '🍊', label: '卖农货', desc: '水果、茶叶、蜂蜜、干货等' },
+  { type: 'homestay', icon: '🏡', label: '推民宿', desc: '民宿、古村、露营、避暑' },
+  { type: 'rural-food', icon: '🍲', label: '发饭店', desc: '农家菜、土灶饭、小吃、宴席' },
+  { type: 'craft', icon: '🎭', label: '秀手艺', desc: '戏曲、酿造、木作、编织等' },
+  { type: 'village-event', icon: '🎉', label: '宣传村子', desc: '丰收节、市集、音乐节、活动' },
 ];
 
-const LOCAL_CASES: { key: string; label: string; aliases?: string[]; directions: { label: string; type: TemplateType }[] }[] = [
+const LOCAL_CASES = [
   {
     key: 'pingnan', label: '屏南县',
     directions: [
@@ -156,7 +168,7 @@ function CopyButton({ text, label }: { text: string; label?: string }) {
   return (
     <button
       onClick={handleCopy}
-      className={`warm-btn w-full py-4 rounded-2xl text-xl font-bold transition-all ${
+      className={`w-full py-4 rounded-2xl text-xl font-bold transition-all ${
         copied
           ? 'bg-[#6B8F71] text-white shadow-lg'
           : 'bg-[#C4704B] text-white hover:bg-[#A85A38] shadow-lg active:scale-[0.97]'
@@ -177,7 +189,7 @@ function TrafficToggle({ value, onChange }: { value: 'public' | 'private'; onCha
           value === 'public' ? 'bg-[#C4704B] text-white shadow-md' : 'text-[#8B7355] hover:text-[#6B4226]'
         }`}
       >
-        公域获客引流
+        📢 公域获客引流
       </button>
       <button
         onClick={() => onChange('private')}
@@ -185,8 +197,53 @@ function TrafficToggle({ value, onChange }: { value: 'public' | 'private'; onCha
           value === 'private' ? 'bg-[#6B8F71] text-white shadow-md' : 'text-[#8B7355] hover:text-[#6B4226]'
         }`}
       >
-        私域流量转化
+        💬 私域流量转化
       </button>
+    </div>
+  );
+}
+
+// ========== 风格选择器 ==========
+function StyleSelector<T extends { key: string; label: string; desc: string; icon: string }>({
+  styles, selected, onChange, label,
+}: {
+  styles: T[];
+  selected: string;
+  onChange: (key: string) => void;
+  label: string;
+}) {
+  return (
+    <div className="mb-4">
+      <div className="text-base font-bold text-[#3D2B1F] mb-2">{label}</div>
+      <div className="flex flex-wrap gap-2">
+        {styles.map(s => (
+          <button
+            key={s.key}
+            onClick={() => onChange(s.key)}
+            className={`px-3 py-2 rounded-xl text-sm font-medium transition-all border ${
+              selected === s.key
+                ? 'bg-[#C4704B] text-white border-[#C4704B] shadow-md'
+                : 'bg-white text-[#6B4226] border-[#E8D5C4] hover:border-[#C4704B]'
+            }`}
+          >
+            <span className="mr-1">{s.icon}</span>
+            {s.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ========== 提示词展示区 ==========
+function PromptDisplay({ text, wordCount }: { text: string; wordCount?: number }) {
+  return (
+    <div className="bg-[#1a1a2e] rounded-xl p-5 mb-5">
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-xs font-bold text-[#D4A853]">提示词（一键复制）</span>
+        {wordCount !== undefined && <span className="text-xs text-[#8B8BA0]">{wordCount}字</span>}
+      </div>
+      <p className="text-[#e0e0e0] text-base leading-[1.8] whitespace-pre-wrap">{text}</p>
     </div>
   );
 }
@@ -204,6 +261,8 @@ export default function HomePage() {
   const [result, setResult] = useState<GenerateResult | null>(null);
   const [resultTab, setResultTab] = useState<'video' | 'poster' | 'publish'>('video');
   const [trafficMode, setTrafficMode] = useState<'public' | 'private'>('public');
+  const [posterStyleKey, setPosterStyleKey] = useState('default');
+  const [publishStyleKey, setPublishStyleKey] = useState('default');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const progress = step <= 4 ? ((step - 1) / 3) * 100 : 100;
@@ -253,6 +312,8 @@ export default function HomePage() {
     setResult(null);
     setResultTab('video');
     setTrafficMode('public');
+    setPosterStyleKey('default');
+    setPublishStyleKey('default');
 
     try {
       const res = await fetch('/api/generate', {
@@ -292,20 +353,41 @@ export default function HomePage() {
     setResult(null);
     setResultTab('video');
     setTrafficMode('public');
+    setPosterStyleKey('default');
+    setPublishStyleKey('default');
   }, [photoPreviews]);
 
-  // 获取当前提示词文本
-  const getCurrentPrompt = useCallback((): string => {
+  // 获取当前视频提示词
+  const getCurrentVideoPrompt = useCallback((): string => {
     if (!result) return '';
-    const isPublic = trafficMode === 'public';
-    if (resultTab === 'video') {
-      return isPublic ? result.videoPrompt : result.videoPromptPrivate;
-    }
-    if (resultTab === 'poster') {
-      return isPublic ? result.posterPrompt : result.posterPromptPrivate;
-    }
-    return `${result.publishCopy}\n\n${result.tags.join(' ')}`;
-  }, [result, resultTab, trafficMode]);
+    return trafficMode === 'public' ? result.videoPrompt : result.videoPromptPrivate;
+  }, [result, trafficMode]);
+
+  // 获取当前海报提示词
+  const getCurrentPosterPrompt = useCallback((): string => {
+    if (!result) return '';
+    const styleData = result.posterPrompts[posterStyleKey];
+    if (!styleData) return '';
+    return trafficMode === 'public' ? styleData.prompt : styleData.promptPrivate;
+  }, [result, trafficMode, posterStyleKey]);
+
+  // 获取当前海报比例
+  const getCurrentPosterAspectRatio = useCallback((): string => {
+    if (!result) return '3:4';
+    const styleData = result.posterPrompts[posterStyleKey];
+    return styleData?.aspectRatio || '3:4';
+  }, [result, posterStyleKey]);
+
+  // 获取当前发布文案
+  const getCurrentPublishCopy = useCallback((): { copy: string; tags: string[] } => {
+    if (!result) return { copy: '', tags: [] };
+    const styleData = result.publishCopies[publishStyleKey];
+    if (!styleData) return { copy: '', tags: [] };
+    return {
+      copy: trafficMode === 'public' ? styleData.copy : styleData.copyPrivate,
+      tags: styleData.tags,
+    };
+  }, [result, trafficMode, publishStyleKey]);
 
   return (
     <div className="min-h-screen bg-[#FFF8F0]">
@@ -320,7 +402,7 @@ export default function HomePage() {
             {step > 1 && step <= 5 && (
               <button
                 onClick={handleReset}
-                className="warm-btn text-sm text-[#C4704B] hover:text-[#A85A38] font-medium px-3 py-1.5 rounded-lg hover:bg-[#FFF0E0]"
+                className="text-sm text-[#C4704B] hover:text-[#A85A38] font-medium px-3 py-1.5 rounded-lg hover:bg-[#FFF0E0]"
               >
                 重新开始
               </button>
@@ -381,7 +463,7 @@ export default function HomePage() {
                         <button
                           key={dir.label}
                           onClick={() => handleSelectLocalDirection(lc.key, dir.label)}
-                          className={`warm-btn text-sm px-4 py-2 rounded-full border transition-all ${
+                          className={`text-sm px-4 py-2 rounded-full border transition-all ${
                             localCase === lc.key && localDirection === dir.label
                               ? 'bg-[#C4704B] text-white border-[#C4704B]'
                               : 'bg-[#FFF0E0] text-[#6B4226] border-[#E8D5C4] hover:border-[#C4704B]'
@@ -407,10 +489,10 @@ export default function HomePage() {
                   <button
                     key={dc.id}
                     onClick={() => handleLoadDemo(dc)}
-                    className="warm-btn bg-white border-2 border-[#E8D5C4] rounded-xl p-4 text-left hover:border-[#C4704B] hover:shadow-md transition-all"
+                    className="bg-white border-2 border-[#E8D5C4] rounded-xl p-4 text-left hover:border-[#C4704B] hover:shadow-md transition-all"
                   >
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="demo-tag">演示</span>
+                      <span className="bg-[#D4A853] text-white text-xs px-2 py-0.5 rounded-full font-bold">演示</span>
                       <span className="font-bold text-[#3D2B1F]">{dc.title}</span>
                     </div>
                     <div className="text-sm text-[#8B7355]">{dc.formData.slogan}</div>
@@ -423,7 +505,7 @@ export default function HomePage() {
               <button
                 onClick={() => setStep(2)}
                 disabled={!selectedType}
-                className={`warm-btn w-full py-4 rounded-2xl text-xl font-bold transition-all ${
+                className={`w-full py-4 rounded-2xl text-xl font-bold transition-all ${
                   selectedType
                     ? 'bg-[#C4704B] text-white hover:bg-[#A85A38] shadow-lg'
                     : 'bg-[#E8D5C4] text-[#8B7355] cursor-not-allowed'
@@ -469,14 +551,14 @@ export default function HomePage() {
             <div className="flex gap-3 mt-8 sticky bottom-4">
               <button
                 onClick={() => setStep(1)}
-                className="warm-btn flex-1 py-4 rounded-2xl text-xl font-bold bg-[#E8D5C4] text-[#6B4226] hover:bg-[#DDD0C0]"
+                className="flex-1 py-4 rounded-2xl text-xl font-bold bg-[#E8D5C4] text-[#6B4226] hover:bg-[#DDD0C0]"
               >
                 ← 上一步
               </button>
               <button
                 onClick={() => setStep(3)}
                 disabled={!formData.name}
-                className={`warm-btn flex-[2] py-4 rounded-2xl text-xl font-bold transition-all ${
+                className={`flex-[2] py-4 rounded-2xl text-xl font-bold transition-all ${
                   formData.name
                     ? 'bg-[#C4704B] text-white hover:bg-[#A85A38] shadow-lg'
                     : 'bg-[#E8D5C4] text-[#8B7355] cursor-not-allowed'
@@ -488,7 +570,7 @@ export default function HomePage() {
           </div>
         )}
 
-        {/* ===== 步骤3：传照片（作为整体参考） ===== */}
+        {/* ===== 步骤3：传照片 ===== */}
         {step === 3 && (
           <div className="animate-fade-in-up">
             <h2 className="text-2xl font-bold text-[#3D2B1F] mb-2">传几张照片</h2>
@@ -526,10 +608,10 @@ export default function HomePage() {
             </p>
 
             <div className="flex gap-3 sticky bottom-4">
-              <button onClick={() => setStep(2)} className="warm-btn flex-1 py-4 rounded-2xl text-xl font-bold bg-[#E8D5C4] text-[#6B4226] hover:bg-[#DDD0C0]">
+              <button onClick={() => setStep(2)} className="flex-1 py-4 rounded-2xl text-xl font-bold bg-[#E8D5C4] text-[#6B4226] hover:bg-[#DDD0C0]">
                 ← 上一步
               </button>
-              <button onClick={() => setStep(4)} className="warm-btn flex-[2] py-4 rounded-2xl text-xl font-bold bg-[#C4704B] text-white hover:bg-[#A85A38] shadow-lg">
+              <button onClick={() => setStep(4)} className="flex-[2] py-4 rounded-2xl text-xl font-bold bg-[#C4704B] text-white hover:bg-[#A85A38] shadow-lg">
                 照片选好了，下一步 →
               </button>
             </div>
@@ -569,42 +651,43 @@ export default function HomePage() {
 
             {/* 生成说明 */}
             <div className="bg-[#FFF0E0] rounded-2xl p-4 mb-6 border border-[#E8D5C4]">
-              <div className="font-bold text-[#6B4226] mb-2">生成后会给你两版提示词，每版再分公域/私域：</div>
+              <div className="font-bold text-[#6B4226] mb-2">生成后会给你两种提示词，每种分公域/私域：</div>
               <div className="space-y-2">
                 <div className="flex gap-3">
                   <div className="flex-1 bg-white rounded-xl p-3 border border-[#E8D5C4]">
                     <div className="text-lg mb-1">🎬</div>
                     <div className="font-bold text-[#3D2B1F] text-sm">AI短视频分镜提示词</div>
-                    <div className="text-xs text-[#8B7355]">你本人出镜参与，直接粘贴到Sora、可灵等</div>
+                    <div className="text-xs text-[#8B7355]">350-400字，你本人出镜，粘贴到Sora/可灵</div>
                   </div>
                   <div className="flex-1 bg-white rounded-xl p-3 border border-[#E8D5C4]">
                     <div className="text-lg mb-1">🖼️</div>
                     <div className="font-bold text-[#3D2B1F] text-sm">宣传海报图片提示词</div>
-                    <div className="text-xs text-[#8B7355]">你本人出镜，直接粘贴到Midjourney、DALL-E等</div>
+                    <div className="text-xs text-[#8B7355]">11种风格可选，≤500字，粘贴到MJ/DALL-E</div>
                   </div>
                 </div>
-                <div className="bg-white rounded-xl p-3 border border-[#E8D5C4]">
-                  <div className="font-bold text-[#3D2B1F] text-sm mb-1">每版提示词再分两种：</div>
-                  <div className="flex gap-2 text-xs">
-                    <span className="bg-[#C4704B]/10 text-[#C4704B] px-2 py-1 rounded font-bold">公域获客引流</span>
-                    <span className="text-[#8B7355]">无联系方式，只留地址和品牌</span>
+                <div className="flex gap-3">
+                  <div className="flex-1 bg-white rounded-xl p-3 border border-[#E8D5C4]">
+                    <div className="text-lg mb-1">🚀</div>
+                    <div className="font-bold text-[#3D2B1F] text-sm">发布文案</div>
+                    <div className="text-xs text-[#8B7355]">10种风格可选，抖音/视频号/小红书都能用</div>
                   </div>
-                  <div className="flex gap-2 text-xs mt-1">
-                    <span className="bg-[#6B8F71]/10 text-[#6B8F71] px-2 py-1 rounded font-bold">私域流量转化</span>
-                    <span className="text-[#8B7355]">含联系方式，方便直接联系</span>
+                  <div className="flex-1 bg-white rounded-xl p-3 border border-[#E8D5C4]">
+                    <div className="font-bold text-[#3D2B1F] text-sm mb-1">每版分两种：</div>
+                    <div className="text-xs text-[#C4704B]">📢 公域引流：无联系方式</div>
+                    <div className="text-xs text-[#6B8F71]">💬 私域转化：含联系方式</div>
                   </div>
                 </div>
               </div>
             </div>
 
             <div className="flex gap-3 sticky bottom-4">
-              <button onClick={() => setStep(3)} className="warm-btn flex-1 py-4 rounded-2xl text-xl font-bold bg-[#E8D5C4] text-[#6B4226] hover:bg-[#DDD0C0]">
+              <button onClick={() => setStep(3)} className="flex-1 py-4 rounded-2xl text-xl font-bold bg-[#E8D5C4] text-[#6B4226] hover:bg-[#DDD0C0]">
                 ← 修改
               </button>
               <button
                 onClick={handleGenerate}
                 disabled={generating}
-                className={`warm-btn flex-[2] py-4 rounded-2xl text-xl font-bold transition-all ${
+                className={`flex-[2] py-4 rounded-2xl text-xl font-bold transition-all ${
                   generating ? 'bg-[#E8D5C4] text-[#8B7355] cursor-wait' : 'bg-[#C4704B] text-white hover:bg-[#A85A38] shadow-lg'
                 }`}
               >
@@ -624,7 +707,7 @@ export default function HomePage() {
             <div className="flex gap-2 mb-4">
               <button
                 onClick={() => setResultTab('video')}
-                className={`warm-btn flex-1 py-3 rounded-xl text-base font-bold transition-all ${
+                className={`flex-1 py-3 rounded-xl text-base font-bold transition-all ${
                   resultTab === 'video' ? 'bg-[#C4704B] text-white shadow-md' : 'bg-white text-[#6B4226] border border-[#E8D5C4]'
                 }`}
               >
@@ -632,7 +715,7 @@ export default function HomePage() {
               </button>
               <button
                 onClick={() => setResultTab('poster')}
-                className={`warm-btn flex-1 py-3 rounded-xl text-base font-bold transition-all ${
+                className={`flex-1 py-3 rounded-xl text-base font-bold transition-all ${
                   resultTab === 'poster' ? 'bg-[#C4704B] text-white shadow-md' : 'bg-white text-[#6B4226] border border-[#E8D5C4]'
                 }`}
               >
@@ -640,7 +723,7 @@ export default function HomePage() {
               </button>
               <button
                 onClick={() => setResultTab('publish')}
-                className={`warm-btn flex-1 py-3 rounded-xl text-base font-bold transition-all ${
+                className={`flex-1 py-3 rounded-xl text-base font-bold transition-all ${
                   resultTab === 'publish' ? 'bg-[#C4704B] text-white shadow-md' : 'bg-white text-[#6B4226] border border-[#E8D5C4]'
                 }`}
               >
@@ -651,47 +734,36 @@ export default function HomePage() {
             {/* ===== AI短视频完整提示词 ===== */}
             {resultTab === 'video' && (
               <div className="animate-fade-in-up">
-                <div className="result-card">
+                <div className="bg-white rounded-2xl border border-[#E8D5C4] p-5">
                   <div className="mb-4">
                     <h3 className="text-xl font-bold text-[#3D2B1F]">AI短视频分镜提示词</h3>
                     <p className="text-sm text-[#8B7355] mt-1">完整一段，可直接粘贴到 Sora、可灵、Runway 等视频生成工具</p>
                   </div>
 
-                  {/* 公域/私域切换 */}
                   <TrafficToggle value={trafficMode} onChange={setTrafficMode} />
 
-                  {/* 当前版本说明 */}
                   <div className={`text-sm px-3 py-2 rounded-lg mb-4 ${trafficMode === 'public' ? 'bg-[#C4704B]/10 text-[#C4704B]' : 'bg-[#6B8F71]/10 text-[#6B8F71]'}`}>
-                    {trafficMode === 'public' 
-                      ? '📢 公域获客引流版：不包含联系方式、电话号码、二维码，只保留地址和品牌信息，适合发到抖音、视频号等公域平台吸引流量'
-                      : '💬 私域流量转化版：包含联系方式，适合发到微信群、朋友圈、小红书私信等私域场景促成转化'}
+                    {trafficMode === 'public'
+                      ? '📢 公域获客引流版：不包含联系方式、电话号码、二维码，只保留地址和品牌信息'
+                      : '💬 私域流量转化版：包含联系方式，方便用户直接联系'}
                   </div>
 
-                  {/* AI提示词 - 深色代码区 */}
-                  <div className="bg-[#1a1a2e] rounded-xl p-5 mb-5">
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-xs font-bold text-[#D4A853]">
-                        提示词（{trafficMode === 'public' ? '公域引流版' : '私域转化版'}，一键复制）
-                      </span>
-                      <span className="text-xs text-[#8B8BA0]">{getCurrentPrompt().length}字</span>
-                    </div>
-                    <p className="text-[#e0e0e0] text-base leading-[1.8] whitespace-pre-wrap">{getCurrentPrompt()}</p>
-                  </div>
+                  <PromptDisplay text={getCurrentVideoPrompt()} wordCount={getCurrentVideoPrompt().length} />
 
-                  {/* 一键复制大按钮 */}
-                  <CopyButton text={getCurrentPrompt()} label={trafficMode === 'public' ? '一键复制（公域引流版）' : '一键复制（私域转化版）'} />
+                  <CopyButton
+                    text={getCurrentVideoPrompt()}
+                    label={trafficMode === 'public' ? '一键复制（公域引流版）' : '一键复制（私域转化版）'}
+                  />
                 </div>
 
-                {/* 使用提示 */}
                 <div className="mt-4 bg-[#FFF0E0] rounded-2xl p-4 border border-[#E8D5C4]">
                   <div className="flex items-center gap-2 mb-2">
                     <span>💡</span>
                     <span className="font-bold text-[#6B4226]">使用方法</span>
                   </div>
                   <ul className="text-[#6B4226] text-sm space-y-1">
-                    <li>• 公域引流版：发到抖音、视频号、快手等公开平台，吸引关注和私信</li>
-                    <li>• 私域转化版：发到微信群、朋友圈、小红书私信，方便用户直接联系你</li>
-                    <li>• 点击上方按钮复制完整提示词</li>
+                    <li>• 公域引流版：发到抖音、视频号等公域平台，吸引关注和私信</li>
+                    <li>• 私域转化版：发到微信群、朋友圈等私域场景，方便用户直接联系你</li>
                     <li>• 打开 Sora / 可灵 / Runway 等视频生成工具</li>
                     <li>• 粘贴提示词，设置比例为 9:16（竖屏），即可生成</li>
                     <li>• 如有上传照片，可在支持图片参考的工具中同时上传</li>
@@ -700,62 +772,66 @@ export default function HomePage() {
               </div>
             )}
 
-            {/* ===== 宣传海报完整提示词 ===== */}
+            {/* ===== 宣传海报提示词 ===== */}
             {resultTab === 'poster' && (
               <div className="animate-fade-in-up">
-                <div className="result-card">
+                <div className="bg-white rounded-2xl border border-[#E8D5C4] p-5">
                   <div className="mb-4">
                     <h3 className="text-xl font-bold text-[#3D2B1F]">宣传海报图片提示词</h3>
                     <p className="text-sm text-[#8B7355] mt-1">完整一段，可直接粘贴到 Midjourney、DALL-E、Stable Diffusion 等</p>
                   </div>
 
-                  {/* 公域/私域切换 */}
+                  {/* 风格选择 */}
+                  <StyleSelector
+                    styles={result.posterStyles}
+                    selected={posterStyleKey}
+                    onChange={setPosterStyleKey}
+                    label="选择海报风格"
+                  />
+
                   <TrafficToggle value={trafficMode} onChange={setTrafficMode} />
 
-                  {/* 当前版本说明 */}
                   <div className={`text-sm px-3 py-2 rounded-lg mb-4 ${trafficMode === 'public' ? 'bg-[#C4704B]/10 text-[#C4704B]' : 'bg-[#6B8F71]/10 text-[#6B8F71]'}`}>
-                    {trafficMode === 'public' 
-                      ? '📢 公域获客引流版：海报中不包含联系方式、电话号码、二维码，只保留地址和品牌信息'
-                      : '💬 私域流量转化版：海报底部包含联系方式，方便用户扫码或拨打电话'}
+                    {trafficMode === 'public'
+                      ? '📢 公域获客引流版：海报中不包含联系方式、电话号码、二维码'
+                      : '💬 私域流量转化版：海报底部包含联系方式'}
                   </div>
 
-                  {/* 海报参数 */}
+                  {/* 当前风格和比例 */}
                   <div className="flex gap-3 mb-4">
                     <div className="bg-[#FFF0E0] rounded-lg px-3 py-1.5">
-                      <span className="text-xs text-[#8B7355]">风格</span>
-                      <p className="text-sm font-bold text-[#6B4226]">{result.posterStyle}</p>
+                      <span className="text-xs text-[#8B7355]">当前风格</span>
+                      <p className="text-sm font-bold text-[#6B4226]">
+                        {result.posterStyles.find(s => s.key === posterStyleKey)?.icon}{' '}
+                        {result.posterStyles.find(s => s.key === posterStyleKey)?.label}
+                      </p>
                     </div>
                     <div className="bg-[#FFF0E0] rounded-lg px-3 py-1.5">
-                      <span className="text-xs text-[#8B7355]">比例</span>
-                      <p className="text-sm font-bold text-[#6B4226]">{result.posterAspectRatio}</p>
+                      <span className="text-xs text-[#8B7355]">推荐比例</span>
+                      <p className="text-sm font-bold text-[#6B4226]">{getCurrentPosterAspectRatio()}</p>
+                    </div>
+                    <div className="bg-[#FFF0E0] rounded-lg px-3 py-1.5">
+                      <span className="text-xs text-[#8B7355]">字数</span>
+                      <p className="text-sm font-bold text-[#6B4226]">{getCurrentPosterPrompt().length}字</p>
                     </div>
                   </div>
 
-                  {/* AI提示词 - 深色代码区 */}
-                  <div className="bg-[#1a1a2e] rounded-xl p-5 mb-5">
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-xs font-bold text-[#D4A853]">
-                        提示词（{trafficMode === 'public' ? '公域引流版' : '私域转化版'}，一键复制）
-                      </span>
-                      <span className="text-xs text-[#8B8BA0]">{getCurrentPrompt().length}字</span>
-                    </div>
-                    <p className="text-[#e0e0e0] text-base leading-[1.8] whitespace-pre-wrap">{getCurrentPrompt()}</p>
-                  </div>
+                  <PromptDisplay text={getCurrentPosterPrompt()} wordCount={getCurrentPosterPrompt().length} />
 
-                  {/* 一键复制大按钮 */}
-                  <CopyButton text={getCurrentPrompt()} label={trafficMode === 'public' ? '一键复制（公域引流版）' : '一键复制（私域转化版）'} />
+                  <CopyButton
+                    text={getCurrentPosterPrompt()}
+                    label={`一键复制（${result.posterStyles.find(s => s.key === posterStyleKey)?.label}·${trafficMode === 'public' ? '公域' : '私域'}版）`}
+                  />
                 </div>
 
-                {/* 使用提示 */}
                 <div className="mt-4 bg-[#FFF0E0] rounded-2xl p-4 border border-[#E8D5C4]">
                   <div className="flex items-center gap-2 mb-2">
                     <span>💡</span>
                     <span className="font-bold text-[#6B4226]">使用方法</span>
                   </div>
                   <ul className="text-[#6B4226] text-sm space-y-1">
-                    <li>• 公域引流版：发到公域平台做曝光，不含联系方式避免被限流</li>
-                    <li>• 私域转化版：发到私域场景，含联系方式方便用户找到你</li>
-                    <li>• Midjourney：粘贴后末尾加 --ar 3:4 --v 6</li>
+                    <li>• 切换不同风格，选择你喜欢的视觉风格</li>
+                    <li>• Midjourney：粘贴后末尾加 --ar {getCurrentPosterAspectRatio().replace(':', '')} --v 6</li>
                     <li>• DALL-E：直接粘贴到图片生成对话框</li>
                     <li>• 如有上传照片，可在支持图片参考的工具中同时上传</li>
                   </ul>
@@ -766,24 +842,46 @@ export default function HomePage() {
             {/* ===== 发布文案 ===== */}
             {resultTab === 'publish' && (
               <div className="animate-fade-in-up">
-                <div className="result-card">
+                <div className="bg-white rounded-2xl border border-[#E8D5C4] p-5">
                   <div className="mb-4">
                     <h3 className="text-xl font-bold text-[#3D2B1F]">发布文案</h3>
                     <p className="text-sm text-[#8B7355]">抖音、视频号、小红书都可以直接发</p>
                   </div>
 
-                  <div className="bg-[#FFF8F0] rounded-xl p-4 text-lg leading-relaxed text-[#3D2B1F] mb-4 border border-[#E8D5C4]">
-                    {result.publishCopy}
+                  {/* 风格选择 */}
+                  <StyleSelector
+                    styles={result.publishStyles}
+                    selected={publishStyleKey}
+                    onChange={setPublishStyleKey}
+                    label="选择文案风格"
+                  />
+
+                  <TrafficToggle value={trafficMode} onChange={setTrafficMode} />
+
+                  <div className={`text-sm px-3 py-2 rounded-lg mb-4 ${trafficMode === 'public' ? 'bg-[#C4704B]/10 text-[#C4704B]' : 'bg-[#6B8F71]/10 text-[#6B8F71]'}`}>
+                    {trafficMode === 'public'
+                      ? '📢 公域获客引流版：文案中不包含联系方式、电话号码'
+                      : '💬 私域流量转化版：文案末尾包含联系方式'}
                   </div>
+
+                  {/* 文案内容 */}
+                  <div className="bg-[#FFF8F0] rounded-xl p-4 text-lg leading-relaxed text-[#3D2B1F] mb-4 border border-[#E8D5C4]">
+                    {getCurrentPublishCopy().copy}
+                  </div>
+
+                  {/* 标签 */}
                   <div className="flex flex-wrap gap-2 mb-5">
-                    {result.tags.map((tag, idx) => (
+                    {getCurrentPublishCopy().tags.map((tag, idx) => (
                       <span key={idx} className="bg-[#6B8F71]/10 text-[#6B8F71] px-3 py-1 rounded-full text-sm font-medium">
                         {tag}
                       </span>
                     ))}
                   </div>
 
-                  <CopyButton text={`${result.publishCopy}\n\n${result.tags.join(' ')}`} label="一键复制发布文案" />
+                  <CopyButton
+                    text={`${getCurrentPublishCopy().copy}\n\n${getCurrentPublishCopy().tags.join(' ')}`}
+                    label={`一键复制（${result.publishStyles.find(s => s.key === publishStyleKey)?.label}·${trafficMode === 'public' ? '公域' : '私域'}版）`}
+                  />
                 </div>
               </div>
             )}
@@ -791,7 +889,7 @@ export default function HomePage() {
             {/* 重新开始 */}
             <button
               onClick={handleReset}
-              className="warm-btn w-full py-4 rounded-2xl text-xl font-bold bg-[#E8D5C4] text-[#6B4226] hover:bg-[#DDD0C0] mt-8"
+              className="w-full py-4 rounded-2xl text-xl font-bold bg-[#E8D5C4] text-[#6B4226] hover:bg-[#DDD0C0] mt-8"
             >
               再做一条新的
             </button>

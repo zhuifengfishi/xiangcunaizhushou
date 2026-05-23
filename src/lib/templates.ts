@@ -137,17 +137,40 @@ const PUBLISH_TEMPLATES: Record<string, {
 
 // ========== 照片参考描述 ==========
 function photoDesc(photoCount: number): string {
-  if (photoCount <= 0) return '';
+  if (photoCount <= 0) return '你本人的人物形象要充分融入产品画面和乡村风景中，让看视频的人感受到真实亲切的参与感。';
   return `画面参考用户提供的${photoCount}张照片的风格和内容，将你本人的人物形象与产品风景充分融合，让人物自然地出现在每一个画面中。`;
 }
 
 function photoDescPoster(photoCount: number): string {
-  if (photoCount <= 0) return '';
+  if (photoCount <= 0) return '你本人的人物形象要充分融入产品画面和乡村风景中，展现真实亲切的参与感。';
   return `参考用户提供的${photoCount}张照片的风格和内容，将你本人的人物形象与产品风景充分融合。`;
 }
 
-// ========== 截断到指定字数 ==========
+// ========== 截断/补齐到指定字数 ==========
+const PAD_PHRASES = [
+  '镜头语言流畅自然',
+  '画面节奏舒适',
+  '人物表情真实生动',
+  '光影变化丰富',
+  '场景转换顺滑',
+  '整体氛围温暖亲切',
+  '细节展现到位',
+  '人物动作自然',
+  '画面构图精美',
+  '色彩层次分明',
+];
+
 function clampText(text: string, min: number, max: number): string {
+  // 如果字数不足，补充描述性短句
+  if (text.length < min) {
+    let padded = text;
+    let i = 0;
+    while (padded.length < min && i < PAD_PHRASES.length) {
+      padded = padded + '，' + PAD_PHRASES[i];
+      i++;
+    }
+    text = padded;
+  }
   if (text.length <= max) return text;
   // 从末尾找最后一个句号/分号/逗号，在max内截断
   let cut = max;
@@ -174,7 +197,7 @@ const videoPromptGenerators: Record<TemplateType, { pub: VideoGen; pri: VideoGen
     pri: (fd, lc, ld, pc) => {
       const loc = fd.location || '乡村';
       const prefix = ld ? `${loc}·${ld}——` : '';
-      let text = `15秒竖屏短视频，9:16比例。${prefix}讲述${fd.name}的故事：第1段，你站在${loc}的田间山头，手里捧着刚采摘的${fd.name}，身后是连绵的山和梯田，阳光洒在脸上，你笑着向镜头展示手中的好东西；第2段，你蹲在晾晒架旁，翻动${fd.name}，展示${fd.highlights}的过程，微风吹过，你抬头对镜头微笑；第3段，你走进自家作坊，亲手打包${fd.name}，动作熟练又认真，偶尔抬头看看镜头；第4段，你端着打包好的${fd.name}走出院门，夕阳洒在泥墙上，你回头对着镜头说：${fd.slogan}；第5段，你举着写有联系方式${fd.contact}的牌子站在村口，身后炊烟升起。整体风格：温暖、真实、有烟火气，只有旁白配音，不要出现任何字幕和文字。${photoDesc(pc)}`;
+      let text = `15秒竖屏短视频，9:16比例。${prefix}讲述${fd.name}的故事：第1段，你站在${loc}的田间山头，手里捧着刚采摘的${fd.name}，身后是连绵的山和梯田，阳光洒在脸上，你笑着向镜头展示手中的好东西，动作自然大方亲切；第2段，你蹲在晾晒架旁，翻动${fd.name}，展示${fd.highlights}的过程，微风吹过，你抬头对镜头微笑，眼里满是自豪；第3段，你走进自家作坊，亲手打包${fd.name}，动作熟练又认真，偶尔抬头看看镜头，嘴角微微上扬；第4段，你端着打包好的${fd.name}走出院门，夕阳洒在泥墙上，你回头对着镜头说：${fd.slogan}；第5段，你举着写有联系方式${fd.contact}的牌子站在村口，身后炊烟升起，你微笑挥手告别。整体风格：温暖、真实、有烟火气，只有旁白配音，不要出现任何字幕和文字。${photoDesc(pc)}`;
       return clampText(text, 350, 400);
     },
   },
@@ -183,13 +206,13 @@ const videoPromptGenerators: Record<TemplateType, { pub: VideoGen; pri: VideoGen
     pub: (fd, lc, ld, pc) => {
       const loc = fd.location || '乡村';
       const prefix = ld ? `${loc}·${ld}——` : '';
-      let text = `15秒竖屏短视频，9:16比例。${prefix}带你走进${fd.name}：第1段，你沿着${loc}的小路走来，两旁是老屋和绿树，溪水在脚边流淌，你边走边回头看镜头微笑，步伐轻松；第2段，你推开${fd.name}的木门，走进房间，窗外是山和溪，你坐在窗边深呼吸，表情满足放松；第3段，你在露台或院子里泡茶，远处是云雾缭绕的山谷，夕阳照在脸上，安静而惬意；第4段，夜幕降临，你在院子里抬头看星空，屋里暖光从窗户透出来，你举杯对着镜头说：${fd.slogan}；第5段，你站在门口挥手，身后灯光暖暖的。整体风格：宁静、治愈、有归属感，只有旁白配音，不要出现任何字幕和文字，画面中不要出现任何联系方式、电话号码、二维码。${photoDesc(pc)}`;
+      let text = `15秒竖屏短视频，9:16比例。${prefix}带你走进${fd.name}：第1段，你沿着${loc}的小路走来，两旁是老屋和绿树，溪水在脚边流淌，你边走边回头看镜头微笑，步伐轻松自在；第2段，你推开${fd.name}的木门，走进房间，木质家具、白床品、窗外是山和溪，你坐在窗边深呼吸，表情满足放松；第3段，你在露台或院子里泡茶，远处是云雾缭绕的山谷，夕阳照在脸上，安静而惬意；第4段，夜幕降临，你在院子里抬头看星空，屋里暖光从窗户透出来，你举杯对着镜头说：${fd.slogan}；第5段，你站在门口挥手，身后灯光暖暖的，你转身看了一眼夜色中的${loc}。整体风格：宁静、治愈、有归属感，只有旁白配音，不要出现任何字幕和文字，画面中不要出现任何联系方式、电话号码、二维码。${photoDesc(pc)}`;
       return clampText(text, 350, 400);
     },
     pri: (fd, lc, ld, pc) => {
       const loc = fd.location || '乡村';
       const prefix = ld ? `${loc}·${ld}——` : '';
-      let text = `15秒竖屏短视频，9:16比例。${prefix}带你走进${fd.name}：第1段，你沿着${loc}的小路走来，两旁是老屋和绿树，溪水在脚边流淌，你边走边回头看镜头微笑；第2段，你推开${fd.name}的木门，走进房间，窗外是山和溪，你坐在窗边深呼吸，表情满足放松；第3段，你在露台泡茶，远处云雾缭绕，夕阳照在脸上，安静而惬意；第4段，夜幕降临，你举杯对着镜头说：${fd.slogan}；第5段，你站在门口展示联系方式${fd.contact}，身后灯光暖暖的。整体风格：宁静、治愈、有归属感，只有旁白配音，不要出现任何字幕和文字。${photoDesc(pc)}`;
+      let text = `15秒竖屏短视频，9:16比例。${prefix}带你走进${fd.name}：第1段，你沿着${loc}的小路走来，两旁是老屋和绿树，溪水在脚边流淌，你边走边回头看镜头微笑，步伐轻松自在；第2段，你推开${fd.name}的木门，走进房间，木质家具、白床品、窗外是山和溪，你坐在窗边深呼吸，表情满足放松；第3段，你在露台或院子里泡茶，远处是云雾缭绕的山谷，夕阳照在脸上，安静而惬意；第4段，夜幕降临，你在院子里抬头看星空，屋里暖光从窗户透出来，你举杯对着镜头说：${fd.slogan}；第5段，你站在门口展示联系方式${fd.contact}，身后灯笼光暖暖的，你微笑挥手。整体风格：宁静、治愈、有归属感，只有旁白配音，不要出现任何字幕和文字。${photoDesc(pc)}`;
       return clampText(text, 350, 400);
     },
   },
@@ -204,7 +227,7 @@ const videoPromptGenerators: Record<TemplateType, { pub: VideoGen; pri: VideoGen
     pri: (fd, lc, ld, pc) => {
       const loc = fd.location || '乡村';
       const prefix = ld ? `${loc}·${ld}——` : '';
-      let text = `15秒竖屏短视频，9:16比例。${prefix}带你吃${fd.name}：第1段，你掀开大铁锅盖，热气腾腾的菜冒着白烟，你夹起一块放进嘴里，竖起大拇指对着镜头；第2段，你蹲在柴火灶前添柴，火苗舔着锅底，你翻动铁锅，脸上被火光照得通红；第3段，你带镜头走进菜地，弯腰摘菜，举起新鲜的菜对着镜头：新鲜着呢；第4段，你端菜出来，家人朋友围坐，你举杯对着镜头说：${fd.slogan}；第5段，你站在门口展示联系方式${fd.contact}，身后手写招牌和暖光。整体风格：食欲感、热闹、有烟火气，只有旁白配音，不要出现任何字幕和文字。${photoDesc(pc)}`;
+      let text = `15秒竖屏短视频，9:16比例。${prefix}带你吃${fd.name}：第1段，你掀开大铁锅盖，热气腾腾的菜冒着白烟，你夹起一块放进嘴里，眼睛一亮，竖起大拇指对着镜头，满脸满足；第2段，你蹲在柴火灶前添柴，火苗舔着锅底，你翻动铁锅，脸上被火光照得通红，动作利落熟练；第3段，你带镜头走进自家菜地，弯腰摘菜，菜叶上还有露珠，你举起新鲜的菜对着镜头说：新鲜着呢；第4段，你端菜出来，家人朋友围坐在一起，热热闹闹，你举杯对着镜头说：${fd.slogan}；第5段，你站在门口展示联系方式${fd.contact}，身后手写招牌和暖光，你笑着招手。整体风格：食欲感、热闹、有烟火气，只有旁白配音，不要出现任何字幕和文字。${photoDesc(pc)}`;
       return clampText(text, 350, 400);
     },
   },
@@ -219,7 +242,7 @@ const videoPromptGenerators: Record<TemplateType, { pub: VideoGen; pri: VideoGen
     pri: (fd, lc, ld, pc) => {
       const loc = fd.location || '乡村';
       const prefix = ld ? `${loc}·${ld}——` : '';
-      let text = `15秒竖屏短视频，9:16比例。${prefix}记录${fd.name}的传承：第1段，你站在${loc}的工作坊门口，身后架子上摆满${fd.name}作品，你拿起一件向镜头展示，满脸自豪；第2段，你坐下来制作，双手翻飞，动作行云流水，偶尔抬头看镜头，眼里全是热爱；第3段，你带镜头看老照片和旧工具，讲述传承了多少年，表情动情；第4段，你手把手教年轻人，相视而笑，对着镜头说：${fd.slogan}；第5段，你抱着成品站在门口展示联系方式${fd.contact}，夕阳照在你和作品上。整体风格：庄重、温暖、有文化厚度，只有旁白配音，不要出现任何字幕和文字。${photoDesc(pc)}`;
+      let text = `15秒竖屏短视频，9:16比例。${prefix}记录${fd.name}的传承：第1段，你站在${loc}的工作坊门口，身后架子上摆满了${fd.name}的作品，你拿起一件成品向镜头展示，满脸自豪和骄傲；第2段，你坐下来开始制作，双手翻飞，动作行云流水，你偶尔抬头看镜头，眼里全是专注和热爱；第3段，你带着镜头看墙上的老照片和旧工具，指指这个摸摸那个，讲述传承了多少年，表情动情而坚定；第4段，你手把手教一个年轻人，两人相视而笑，你点点头，眼神里有欣慰，对着镜头说：${fd.slogan}；第5段，你抱着成品站在门口展示联系方式${fd.contact}，夕阳照在你和作品上，你微微一笑。整体风格：庄重、温暖、有文化厚度，只有旁白配音，不要出现任何字幕和文字。${photoDesc(pc)}`;
       return clampText(text, 350, 400);
     },
   },
@@ -234,24 +257,34 @@ const videoPromptGenerators: Record<TemplateType, { pub: VideoGen; pri: VideoGen
     pri: (fd, lc, ld, pc) => {
       const loc = fd.location || '乡村';
       const prefix = ld ? `${loc}·${ld}——` : '';
-      let text = `15秒竖屏短视频，9:16比例。${prefix}带你逛${fd.name}：第1段，你站在${loc}村口牌坊下，头顶红灯笼彩旗，你兴奋地朝镜头招手：快来！身后人群熙攘；第2段，你挤进人群看表演，跟着鼓点拍手，回头对镜头笑，眼里全是兴奋；第3段，你端着热腾腾小吃边走边吃，路过一个又一个摊位，开心得像个孩子；第4段，你参与活动弯腰采摘动手体验，举着战利品对着镜头说：${fd.slogan}；第5段，你站在高处展示联系方式${fd.contact}，身后老屋炊烟。整体风格：喜庆、热闹、有人情味，只有旁白配音，不要出现任何字幕和文字。${photoDesc(pc)}`;
+      let text = `15秒竖屏短视频，9:16比例。${prefix}带你逛${fd.name}：第1段，你站在${loc}村口大牌坊下，头顶是红灯笼和彩旗，你兴奋地朝镜头招手：快来快来！身后人群熙熙攘攘；第2段，你挤进人群看表演，跟着鼓点拍手，回头对镜头笑，眼里全是兴奋，身边是热闹的人群；第3段，你端着热腾腾小吃边走边吃，路过一个又一个摊位，指指这个看看那个，开心得像个孩子；第4段，你和一群人参与活动，弯腰采摘动手体验，笑声不断，你举着战利品对着镜头说：${fd.slogan}；第5段，你站在高处展示联系方式${fd.contact}，身后老屋炊烟，你挥手告别。整体风格：喜庆、热闹、有人情味，只有旁白配音，不要出现任何字幕和文字。${photoDesc(pc)}`;
       return clampText(text, 350, 400);
     },
   },
 };
 
 // ========== 海报提示词生成（每种风格≤500字） ==========
-function generatePosterPrompt(fd: FormData, styleKey: string, isPrivate: boolean): { prompt: string; aspectRatio: string } {
+function generatePosterPrompt(type: TemplateType, fd: FormData, styleKey: string, isPrivate: boolean): { prompt: string; aspectRatio: string } {
   const sd = POSTER_STYLE_DESCS[styleKey];
   const loc = fd.location || '乡村';
   const aspectRatio = styleKey === 'movie-poster' ? '16:9' : '3:4';
 
+  // 根据类型生成构图描述
+  const typeCompMap: Record<string, string> = {
+    'rural-goods': `画面上半部分展示${fd.name}的特写，质感细腻，光泽诱人；你本人站在画面中央偏下，双手捧着${fd.name}，面带微笑，身后是${loc}的山水田园风光；画面下方可留出品牌名称区域`,
+    'homestay': `画面上半部分是${loc}的全景山水，云雾缭绕；画面中央你本人站在${fd.name}的门口或窗边，手扶门框或端着茶杯，神态惬意放松；画面下方是民宿内景的叠影`,
+    'rural-food': `画面上半部分是${fd.name}的美食特写，热气腾腾，色泽诱人；画面中央你本人端着一盘招牌菜，面带笑容，围裙还没来得及解；身后是${loc}的柴火灶和厨房烟火气`,
+    'craft': `画面上半部分是${fd.name}的成品特写，细节精美，工艺精湛；画面中央你本人坐在工作台前，双手正在制作，神情专注，工具散落桌面；身后是${loc}的工作坊和老墙`,
+    'village-event': `画面上半部分是${loc}活动现场的全景，彩旗飘扬，人头攒动；画面中央你本人站在活动标志前，兴奋地向镜头招手；身后是热闹的人群和乡村美景`,
+  };
+  const typeComposition = typeCompMap[type] || typeCompMap['rural-goods'];
+
   const contactPublic = '画面中不要出现任何联系方式、电话号码、二维码，只保留地址和品牌名称';
   const contactPrivate = `画面底部展示联系方式：${fd.contact}`;
 
-  let prompt = `一张${fd.name}的宣传海报，${aspectRatio === '16:9' ? '横版16:9' : '竖版3:4'}比例。画面中央是你本人站在${loc}的场景，你的形象自然大方，与周围的${fd.name}和风景融为一体。${fd.highlights}。背景是${sd.visual}，配色采用${sd.color}，整体氛围${sd.mood}。画面技法：${sd.technique}。${isPrivate ? contactPrivate : contactPublic}。${photoDescPoster(0)}`;
+  let prompt = `一张${fd.name}的宣传海报，${aspectRatio === '16:9' ? '横版16:9' : '竖版3:4'}比例。构图：${typeComposition}。产品亮点：${fd.highlights}。画面中你本人的形象要清晰自然，与产品和风景融为一体，展现真实亲切的人物参与感。背景环境要体现${loc}的地域特色，山水田园、老屋石路、炊烟田野，让看海报的人一眼就能感受到这里的乡土气息和生活温度。视觉风格：${sd.visual}，整体画面要有层次感，前景是人物和产品，中景是环境场景，远景是山水天空。配色：${sd.color}，色彩搭配要和谐统一，突出产品质感的同时保持乡村的自然美感。氛围：${sd.mood}，让人看了就想来、想吃、想住、想体验。技法：${sd.technique}，画面精度要高，细节丰富，适合打印和社交媒体传播。价格信息：${fd.price}。地址：${loc}。品牌标语：${fd.slogan}。${isPrivate ? contactPrivate : contactPublic}。${photoDescPoster(0)}`;
 
-  return { prompt: clampText(prompt, 100, 500), aspectRatio };
+  return { prompt: clampText(prompt, 350, 500), aspectRatio };
 }
 
 // ========== 发布文案生成（10种风格×公域/私域） ==========
@@ -300,8 +333,8 @@ export function generate(
   // 海报提示词（11种风格）
   const posterPrompts: Record<string, { prompt: string; promptPrivate: string; aspectRatio: string }> = {};
   for (const style of POSTER_STYLES) {
-    const pub = generatePosterPrompt(formData, style.key, false);
-    const pri = generatePosterPrompt(formData, style.key, true);
+    const pub = generatePosterPrompt(type, formData, style.key, false);
+    const pri = generatePosterPrompt(type, formData, style.key, true);
     posterPrompts[style.key] = {
       prompt: pub.prompt,
       promptPrivate: pri.prompt,
