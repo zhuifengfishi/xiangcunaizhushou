@@ -311,7 +311,7 @@ export default function HomePage() {
   const fileInputRefs = useRef<Record<CategoryKey, HTMLInputElement | null>>({
     person: null, product: null, storefront: null, field: null,
   });
-  const progress = step <= 3 ? ((step - 1) / 2) * 100 : 100;
+  const progress = step <= 4 ? ((step - 1) / 3) * 100 : 100;
 
   const handleSelectType = useCallback((type: TemplateType) => setSelectedType(type), []);
 
@@ -491,7 +491,8 @@ export default function HomePage() {
               <div className="flex justify-between mt-1 text-xs text-[#8B7355]">
                 <span className={step >= 1 ? 'text-[#C4704B] font-medium' : ''}>①选类型</span>
                 <span className={step >= 2 ? 'text-[#C4704B] font-medium' : ''}>②填信息</span>
-                <span className={step >= 3 ? 'text-[#C4704B] font-medium' : ''}>③看结果</span>
+                <span className={step >= 3 ? 'text-[#C4704B] font-medium' : ''}>③检查文案</span>
+                <span className={step >= 4 ? 'text-[#C4704B] font-medium' : ''}>④提交生成</span>
               </div>
             </>
           )}
@@ -859,13 +860,13 @@ export default function HomePage() {
               </div>
             )}
 
-            {/* 下一步：选参考图 */}
+            {/* 下一步：提交生成 */}
             <div className="mt-8">
               <button
                 onClick={() => setStep(4)}
                 className="w-full py-5 rounded-2xl text-xl font-bold bg-gradient-to-r from-[#C4704B] to-[#D4A853] text-white hover:shadow-xl transition-all active:scale-[0.97] shadow-lg"
               >
-                📸 下一步：选参考图，让AI照着你的实景来 →
+                📸 提交生成，让AI照着你的实景来 →
               </button>
             </div>
 
@@ -890,7 +891,7 @@ export default function HomePage() {
                 ← 返回结果
               </button>
             </div>
-            <h2 className="text-2xl font-bold text-[#3D2B1F] mb-2">📸 选参考图</h2>
+            <h2 className="text-2xl font-bold text-[#3D2B1F] mb-2">📸 提交生成</h2>
             <p className="text-[#8B7355] mb-4 text-lg">选几张照片，AI照着你的实景来生成</p>
 
             {/* 说明 */}
