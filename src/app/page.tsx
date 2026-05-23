@@ -1,6 +1,44 @@
 'use client';
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
+
+// ========== 语音识别类型 ==========
+interface SpeechRecognitionEvent {
+  results: SpeechRecognitionResultList;
+  resultIndex: number;
+}
+interface SpeechRecognitionResultList {
+  length: number;
+  item(index: number): SpeechRecognitionResult;
+  [index: number]: SpeechRecognitionResult;
+}
+interface SpeechRecognitionResult {
+  length: number;
+  item(index: number): SpeechRecognitionAlternative;
+  [index: number]: SpeechRecognitionAlternative;
+  isFinal: boolean;
+}
+interface SpeechRecognitionAlternative {
+  transcript: string;
+  confidence: number;
+}
+type SpeechRecognitionInstance = {
+  lang: string;
+  continuous: boolean;
+  interimResults: boolean;
+  onresult: ((event: SpeechRecognitionEvent) => void) | null;
+  onerror: ((event: { error: string }) => void) | null;
+  onend: (() => void) | null;
+  start: () => void;
+  stop: () => void;
+  abort: () => void;
+};
+declare global {
+  interface Window {
+    SpeechRecognition?: new () => SpeechRecognitionInstance;
+    webkitSpeechRecognition?: new () => SpeechRecognitionInstance;
+  }
+}
 
 // ========== 类型定义 ==========
 type TemplateType = 'rural-goods' | 'homestay' | 'rural-food' | 'craft' | 'village-event';
@@ -433,6 +471,92 @@ export default function HomePage() {
   const getCategoryCount = (key: CategoryKey) => selectedPresets[key].size + userImages[key].length;
 
   // 获取当前视频提示词
+  const [voiceListening, setVoiceListening] = useState(false);
+  const [voiceText, setVoiceText] = useState('');
+  const [voiceSupported] = useState(() => typeof window !== 'undefined' && !!(window.SpeechRecognition || window.webkitSpeechRecognition));
+  const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
+
+  const parseVoiceToForm = useCallback((text: string) => {
+    const t = text.toLowerCase();
+    let detectedType: TemplateType | null = null;
+    if (/农货|水果|茶叶|蜂蜜|米面|菌菇|干货|腊味|特产|柿子|柿饼|卖/.test(t)) detectedType = 'rural-goods';
+    else if (/民宿|古村|露营|避暑|亲子游|周末游|住|旅游|游玩/.test(t)) detectedType = 'homestay';
+    else if (/饭店|农家菜|土灶|小吃|宴席|黄酒|吃|餐饮|饭馆/.test(t)) detectedType = 'rural-food';
+    else if (/手艺|非遗|戏曲|酿造|木作|编织|陶艺|工艺|传承/.test(t)) detectedType = 'craft';
+    else if (/丰收节|市集|音乐节|采摘|民俗|活动|节日|宣传村|村子/.test(t)) detectedType = 'village-event';
+    if (!detectedType) {
+      if (/卖|买|元|块|价格|包邮/.test(t)) detectedType = 'rural-goods';
+      else if (/住|玩|游|风景|景/.test(t)) detectedType = 'homestay';
+      else if (/吃|喝|菜|饭/.test(t)) detectedType = 'rural-food';
+      else detectedType = 'rural-goods';
+    }
+    const sentences = text.split(/[，。,.\n]+/).filter(s => s.trim());
+    let q1 = '', q2 = '', q3 = '';
+    if (sentences.length >= 3) {
+      q1 = sentences[0].trim();
+      q2 = sentences.slice(1, -1).join('，').trim();
+      q3 = sentences[sentences.length - 1].trim();
+    } else if (sentences.length === 2) {
+      q1 = sentences[0].trim();
+      q2 = sentences[1].trim();
+      q3 = '';
+    } else {
+      q1 = text.trim();
+      q2 = '';
+      q3 = '';
+    }
+    return { type: detectedType, formData: { q1, q2, q3 } };
+  }, []);
+
+  const handleVoiceStart = useCallback(() => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) return;
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'zh-CN';
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    let finalTranscript = '';
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
+      let interim = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        if (event.results[i].isFinal) {
+          finalTranscript += event.results[i][0].transcript;
+        } else {
+          interim += event.results[i][0].transcript;
+        }
+      }
+      setVoiceText(finalTranscript + interim);
+    };
+    recognition.onerror = () => { setVoiceListening(false); };
+    recognition.onend = () => { setVoiceListening(false); };
+    recognitionRef.current = recognition;
+    recognition.start();
+    setVoiceListening(true);
+    setVoiceText('');
+  }, []);
+
+  const handleVoiceStop = useCallback(() => {
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+      recognitionRef.current = null;
+    }
+    setVoiceListening(false);
+  }, []);
+
+  const voiceParsedRef = useRef(false);
+  useEffect(() => {
+    if (!voiceListening && voiceText && voiceText.trim().length > 3 && !voiceParsedRef.current) {
+      voiceParsedRef.current = true;
+      const parsed = parseVoiceToForm(voiceText);
+      if (parsed.type) setSelectedType(parsed.type);
+      if (parsed.formData.q1) setFormData(parsed.formData);
+      // 自动跳到步骤2让用户确认，再手动点生成
+      setTimeout(() => { setStep(2); voiceParsedRef.current = false; }, 300);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [voiceListening]);
+
+  // 获取当前视频提示词
   const getCurrentVideoPrompt = useCallback((): string => {
     if (!result) return '';
     return trafficMode === 'public' ? result.videoPrompt : result.videoPromptPrivate;
@@ -503,7 +627,37 @@ export default function HomePage() {
         {/* ===== 步骤1：选类型 ===== */}
         {step === 1 && (
           <div className="animate-fade-in-up">
-            <h2 className="text-2xl font-bold text-[#3D2B1F] mb-2">你想宣传什么？</h2>
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-2xl font-bold text-[#3D2B1F]">你想宣传什么？</h2>
+              {voiceSupported && (
+                <button
+                  onTouchStart={(e) => { e.preventDefault(); handleVoiceStart(); }}
+                  onTouchEnd={handleVoiceStop}
+                  onMouseDown={handleVoiceStart}
+                  onMouseUp={handleVoiceStop}
+                  onMouseLeave={() => { if (voiceListening) handleVoiceStop(); }}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-full text-base font-bold transition-all select-none ${
+                    voiceListening
+                      ? 'bg-red-500 text-white scale-105 shadow-lg shadow-red-200 animate-pulse'
+                      : 'bg-[#C4704B] text-white hover:bg-[#A85A38] shadow-md'
+                  }`}
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                    <line x1="12" y1="19" x2="12" y2="23"/>
+                    <line x1="8" y1="23" x2="16" y2="23"/>
+                  </svg>
+                  {voiceListening ? '松开结束' : '按住说话'}
+                </button>
+              )}
+            </div>
+            {voiceListening && voiceText && (
+              <div className="mb-4 p-3 bg-[#FFF0E0] rounded-xl border border-[#D4A853]">
+                <p className="text-sm text-[#8B7355] mb-1">正在听你说...</p>
+                <p className="text-[#3D2B1F] text-base">{voiceText}</p>
+              </div>
+            )}
             <p className="text-[#8B7355] mb-6 text-lg">选一个大类，我们帮你搭好框架</p>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-8">
@@ -595,7 +749,37 @@ export default function HomePage() {
         {/* ===== 步骤2：填信息 ===== */}
         {step === 2 && (
           <div className="animate-fade-in-up">
-            <h2 className="text-2xl font-bold text-[#3D2B1F] mb-2">填几句实话</h2>
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-2xl font-bold text-[#3D2B1F]">填几句实话</h2>
+              {voiceSupported && (
+                <button
+                  onTouchStart={(e) => { e.preventDefault(); handleVoiceStart(); }}
+                  onTouchEnd={handleVoiceStop}
+                  onMouseDown={handleVoiceStart}
+                  onMouseUp={handleVoiceStop}
+                  onMouseLeave={() => { if (voiceListening) handleVoiceStop(); }}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-full text-base font-bold transition-all select-none ${
+                    voiceListening
+                      ? 'bg-red-500 text-white scale-105 shadow-lg shadow-red-200 animate-pulse'
+                      : 'bg-[#C4704B] text-white hover:bg-[#A85A38] shadow-md'
+                  }`}
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                    <line x1="12" y1="19" x2="12" y2="23"/>
+                    <line x1="8" y1="23" x2="16" y2="23"/>
+                  </svg>
+                  {voiceListening ? '松开结束' : '按住说话'}
+                </button>
+              )}
+            </div>
+            {voiceListening && voiceText && (
+              <div className="mb-4 p-3 bg-[#FFF0E0] rounded-xl border border-[#D4A853]">
+                <p className="text-sm text-[#8B7355] mb-1">正在听你说...</p>
+                <p className="text-[#3D2B1F] text-base">{voiceText}</p>
+              </div>
+            )}
             <p className="text-[#8B7355] mb-6 text-lg">就像跟邻居聊天一样，有啥说啥</p>
 
             <div className="space-y-5">
