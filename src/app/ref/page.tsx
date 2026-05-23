@@ -32,38 +32,38 @@ const PRESET_IMAGES: Record<CategoryKey, PresetImage[]> = {
   person: [
     {
       id: 'preset-person-1',
-      url: 'https://coze-coding-project.tos.coze.site/coze_storage_7643027023899754511/image/generate_image_2d453a3c-8834-4bf6-8fa1-fc7bde44ba2b.jpeg?sign=1811081423-29b9046ba6-0-f1d49ffbc618079b63866c624294cd55d5c275eba4a7800bd87991b05807d948',
+      url: '/ref-images/person-1.jpeg',
       label: '农民老爷爷 - 正面照',
     },
   ],
   product: [
     {
       id: 'preset-product-1',
-      url: 'https://coze-coding-project.tos.coze.site/coze_storage_7643027023899754511/image/generate_image_c491ab5d-7c89-40dc-8367-2b37560cad94.jpeg?sign=1811081424-cf97b22855-0-193a2b9a97c44e542959dbd08a0f67bd457e6089d6e6e8efa6792cfaeb875ff1',
+      url: '/ref-images/product-1.jpeg',
       label: '柿饼/柿子 - 晾晒实拍',
     },
     {
       id: 'preset-product-2',
-      url: 'https://coze-coding-project.tos.coze.site/coze_storage_7643027023899754511/image/generate_image_1345d67a-1050-457c-8b1b-e6fdee15300f.jpeg?sign=1811081425-dcffc67a07-0-4311e0613a843424574e8ffaaf37cec1bc95ceb5c277445f7fb804f3f145480c',
+      url: '/ref-images/product-2.jpeg',
       label: '黄酒 - 传统酿造',
     },
   ],
   storefront: [
     {
       id: 'preset-store-1',
-      url: 'https://coze-coding-project.tos.coze.site/coze_storage_7643027023899754511/image/generate_image_09ec8133-cf7b-46b1-a75f-3117ace8ed72.jpeg?sign=1811081424-4652944abb-0-70f055a197c19e4fd150099f0619e66d5a58eeec1514ee4e590bbd099f220861',
+      url: '/ref-images/storefront-1.jpeg',
       label: '民宿门头 - 古村老屋',
     },
     {
       id: 'preset-store-2',
-      url: 'https://coze-coding-project.tos.coze.site/coze_storage_7643027023899754511/image/generate_image_7b0b49be-0c01-46b1-a38b-15ad07820106.jpeg?sign=1811081425-2bee867641-0-842e4b46f3c43e18a66b790124afc4ce7bc73b158a96286053d10f578a70bbbe',
+      url: '/ref-images/storefront-2.jpeg',
       label: '农家饭店 - 室内环境',
     },
   ],
   field: [
     {
       id: 'preset-field-1',
-      url: 'https://coze-coding-project.tos.coze.site/coze_storage_7643027023899754511/image/generate_image_c4850be1-a2df-4d03-a8fd-6184ed9dcb74.jpeg?sign=1811081424-3f82612cc8-0-4b20d680c300c743086414e0e20b2f272296a487d7e590c352605d3ea77a23d8',
+      url: '/ref-images/field-1.jpeg',
       label: '梯田村庄 - 秋收风景',
     },
   ],
