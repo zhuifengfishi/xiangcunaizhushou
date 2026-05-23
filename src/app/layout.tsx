@@ -4,30 +4,25 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: {
-    default: '新应用 | 扣子编程',
-    template: '%s | 扣子编程',
+    default: '追风少年：乡村短视频生成助手',
+    template: '%s | 追风少年',
   },
   description:
-    '扣子编程是一款一站式云端 Vibe Coding 开发平台。通过对话轻松构建智能体、工作流和网站，实现从创意到上线的无缝衔接。',
+    '让不会写文案、不会拍视频的普通村民，也能快速生成一条乡村宣传短视频草稿。',
   keywords: [
-    '扣子编程',
-    'Coze Code',
-    'Vibe Coding',
-    'AI 编程',
-    '智能体搭建',
-    '工作流搭建',
-    '网站搭建',
-    '网站部署',
-    '全栈开发',
-    'AI 工程师',
+    '乡村短视频',
+    '助农',
+    '视频生成',
+    '乡村宣传',
+    '农货推广',
   ],
-  authors: [{ name: 'Coze Code Team', url: 'https://code.coze.cn' }],
+  authors: [{ name: '追风少年' }],
   generator: 'Coze Code',
   // icons: {
   //   icon: '',
   // },
   openGraph: {
-    title: '扣子编程 | 你的 AI 工程师已就位',
+    title: '追风少年：乡村短视频生成助手',
     description:
       '我正在使用扣子编程 Vibe Coding，让创意瞬间上线。告别拖拽，拥抱心流。',
     url: 'https://code.coze.cn',

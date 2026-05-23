@@ -1,0 +1,49 @@
+{
+  "cases": [
+    {
+      "id": "case1",
+      "title": "四坪村柿子",
+      "type": "rural-goods",
+      "localCase": "siping",
+      "formData": {
+        "name": "四坪村老柿饼",
+        "highlights": "老村古树上结的柿子，自然晾晒，不添加任何东西，甜糯软香，适合当伴手礼送人",
+        "price": "一盒6个装 58元，包邮",
+        "location": "福建省宁德市屏南县熙岭乡四坪村",
+        "contact": "微信：siping2024 / 电话：138XXXX1234",
+        "slogan": "尝一口四坪的秋天，把老村的味道带回家"
+      },
+      "photos": []
+    },
+    {
+      "id": "case2",
+      "title": "龙潭古镇民宿",
+      "type": "homestay",
+      "localCase": "longtan",
+      "formData": {
+        "name": "龙潭溪边小院",
+        "highlights": "石板街旁边的老屋民宿，推窗就能看到溪水，晚上能听到水声，适合周末来发呆",
+        "price": "平日 268元/晚，周末 358元/晚，含早餐",
+        "location": "福建省宁德市屏南县龙潭古镇",
+        "contact": "微信：longtan_inn / 电话：159XXXX5678",
+        "slogan": "来龙潭住一晚，听溪水讲故事"
+      },
+      "photos": []
+    },
+    {
+      "id": "case3",
+      "title": "熙岭乡农家饭",
+      "type": "rural-food",
+      "localCase": "xiling",
+      "formData": {
+        "name": "熙岭阿婆土灶饭",
+        "highlights": "柴火灶烧的饭，自家菜地里现摘的菜，土鸡土鸭都是散养的，10个人一桌也够吃",
+        "price": "人均 60-80元，10人桌餐 600元起，需提前一天预订",
+        "location": "福建省宁德市屏南县熙岭乡",
+        "contact": "微信：xilingfood / 电话：137XXXX9012",
+        "slogan": "城里吃不到的柴火香，来熙岭找阿婆"
+      },
+      "photos": []
+    }
+  ]
+}

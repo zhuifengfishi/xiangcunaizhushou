@@ -55,38 +55,38 @@
 }
 
 :root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --radius: 0.75rem;
+  --background: #FFF8F0;
+  --foreground: #3D2B1F;
+  --card: #FFFFFF;
+  --card-foreground: #3D2B1F;
+  --popover: #FFFFFF;
+  --popover-foreground: #3D2B1F;
+  --primary: #C4704B;
+  --primary-foreground: #FFFFFF;
+  --secondary: #FFF0E0;
+  --secondary-foreground: #6B4226;
+  --muted: #F5EDE4;
+  --muted-foreground: #8B7355;
+  --accent: #D4A853;
+  --accent-foreground: #3D2B1F;
+  --destructive: #D14545;
+  --border: #E8D5C4;
+  --input: #E8D5C4;
+  --ring: #C4704B;
+  --chart-1: #C4704B;
+  --chart-2: #D4A853;
+  --chart-3: #6B8F71;
+  --chart-4: #8B7355;
+  --chart-5: #9BB8A2;
+  --sidebar: #FFF8F0;
+  --sidebar-foreground: #3D2B1F;
+  --sidebar-primary: #C4704B;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #FFF0E0;
+  --sidebar-accent-foreground: #6B4226;
+  --sidebar-border: #E8D5C4;
+  --sidebar-ring: #C4704B;
 }
 
 .dark {
@@ -134,4 +134,104 @@
 
 body {
   @apply font-sans;
+}
+
+/* 追风少年自定义样式 */
+@keyframes typewriter {
+  from { width: 0; }
+  to { width: 100%; }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.4s ease-out forwards;
+}
+
+.animate-fade-in-up-delay-1 {
+  animation: fadeInUp 0.4s ease-out 0.1s forwards;
+  opacity: 0;
+}
+
+.animate-fade-in-up-delay-2 {
+  animation: fadeInUp 0.4s ease-out 0.2s forwards;
+  opacity: 0;
+}
+
+.animate-fade-in-up-delay-3 {
+  animation: fadeInUp 0.4s ease-out 0.3s forwards;
+  opacity: 0;
+}
+
+/* 步骤进度条 */
+.step-progress {
+  background: linear-gradient(90deg, #C4704B var(--progress), #E8D5C4 var(--progress));
+}
+
+/* 温暖按钮效果 */
+.warm-btn {
+  transition: all 0.15s ease;
+}
+.warm-btn:active {
+  transform: scale(0.97);
+}
+
+/* 大输入框 */
+.village-input {
+  font-size: 18px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 2px solid #E8D5C4;
+  background: #FFFFFF;
+  transition: border-color 0.2s;
+}
+.village-input:focus {
+  border-color: #C4704B;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(196, 112, 75, 0.15);
+}
+.village-input::placeholder {
+  color: #C4B5A5;
+}
+
+/* 类型卡片 */
+.type-card {
+  border: 2px solid #E8D5C4;
+  border-radius: 16px;
+  padding: 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: #FFFFFF;
+}
+.type-card:hover {
+  border-color: #C4704B;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(196, 112, 75, 0.15);
+}
+.type-card.selected {
+  border-color: #C4704B;
+  background: #FFF0E0;
+  box-shadow: 0 4px 12px rgba(196, 112, 75, 0.2);
+}
+
+/* 结果卡片 */
+.result-card {
+  background: #FFFFFF;
+  border: 1px solid #E8D5C4;
+  border-radius: 16px;
+  padding: 24px;
+}
+
+/* 演示案例标签 */
+.demo-tag {
+  background: #D4A853;
+  color: #FFFFFF;
+  border-radius: 20px;
+  padding: 4px 12px;
+  font-size: 13px;
+  font-weight: 600;
 }
