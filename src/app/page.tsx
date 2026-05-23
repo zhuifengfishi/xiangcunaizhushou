@@ -58,42 +58,42 @@ const LOCAL_CASES = [
   {
     key: 'pingnan', label: '屏南县',
     directions: [
-      { label: '屏南周末游', type: 'homestay' },
-      { label: '白水洋/鸳鸯溪 + 古村路线', type: 'homestay' },
-      { label: '屏南乡村好物', type: 'rural-goods' },
-      { label: '屏南非遗一分钟', type: 'craft' },
-      { label: '屏南避暑康养', type: 'village-event' },
+      { label: '屏南周末游', type: 'homestay' as TemplateType, formData: { name: '屏南周末两日游', highlights: '白水洋玩水+古村漫步+民宿体验，适合全家出行放松', price: '人均300-500元，含住宿和门票', location: '福建省宁德市屏南县', contact: '微信：pingnan_travel / 电话：0593-XXXX888', slogan: '周末就来屏南，山水之间过两天慢日子' } },
+      { label: '白水洋/鸳鸯溪 + 古村路线', type: 'homestay' as TemplateType, formData: { name: '白水洋鸳鸯溪古村路线', highlights: '白水洋踩水玩石+鸳鸯溪看鸟+周边古村落打卡，一条路线玩透屏南', price: '白水洋门票120元，鸳鸯溪80元，古村免费', location: '福建省宁德市屏南县双溪镇', contact: '微信：bsy_guide / 电话：0593-XXXX666', slogan: '踩过白水洋的石头，才算来过屏南' } },
+      { label: '屏南乡村好物', type: 'rural-goods' as TemplateType, formData: { name: '屏南乡村好物合集', highlights: '屏南老酒、米烧兔、秋菇干、笋干，都是山里土法做的，外面买不到', price: '伴手礼盒 88-168元不等，可快递', location: '福建省宁德市屏南县各乡镇', contact: '微信：pn_goods / 电话：138XXXX2345', slogan: '屏南的山味，每一样都值得带回家' } },
+      { label: '屏南非遗一分钟', type: 'craft' as TemplateType, formData: { name: '屏南非遗一分钟', highlights: '四平戏、木拱廊桥营造技艺、屏南老酒酿造，三项国家级非遗，一分钟看完', price: '免费参观，体验课50-100元/人', location: '福建省宁德市屏南县', contact: '微信：pn_heritage / 电话：0593-XXXX999', slogan: '屏南的老手艺，每一分钟都是百年' } },
+      { label: '屏南避暑康养', type: 'village-event' as TemplateType, formData: { name: '屏南避暑康养之旅', highlights: '夏天22度的屏南，古村落里住几天，空气好水好，适合老人避暑养生', price: '住宿150-300元/晚，含早餐和药膳', location: '福建省宁德市屏南县寿山乡', contact: '微信：pn_kangyang / 电话：0593-XXXX777', slogan: '22度的夏天，在屏南过一段好日子' } },
     ],
   },
   {
     key: 'xiling', label: '熙岭乡',
     directions: [
-      { label: '熙岭乡一日慢游', type: 'homestay' },
-      { label: '古村民宿合集', type: 'homestay' },
-      { label: '乡村餐饮地图', type: 'rural-food' },
-      { label: '新村民/主理人故事', type: 'craft' },
-      { label: '村级文旅活动宣传', type: 'village-event' },
+      { label: '熙岭乡一日慢游', type: 'homestay' as TemplateType, formData: { name: '熙岭乡一日慢游', highlights: '早上逛古村，中午吃土灶饭，下午泡茶发呆，傍晚看日落，一天就够了', price: '人均150-200元，含午餐', location: '福建省宁德市屏南县熙岭乡', contact: '微信：xiling_tour / 电话：138XXXX3456', slogan: '来熙岭，把日子过慢一点' } },
+      { label: '古村民宿合集', type: 'homestay' as TemplateType, formData: { name: '熙岭古村民宿', highlights: '老房子改的民宿，石头墙木窗户，推门就是山，适合想远离城市的人', price: '平日180-280元/晚，周末280-380元/晚', location: '福建省宁德市屏南县熙岭乡', contact: '微信：xiling_stay / 电话：159XXXX7890', slogan: '在熙岭的石头屋里，睡一个好觉' } },
+      { label: '乡村餐饮地图', type: 'rural-food' as TemplateType, formData: { name: '熙岭乡乡村餐饮地图', highlights: '阿婆的土灶饭、溪边的烧烤、自酿米酒配农家菜，跟着地图吃不踩雷', price: '人均50-80元，量大实在', location: '福建省宁德市屏南县熙岭乡', contact: '微信：xiling_food / 电话：138XXXX4567', slogan: '在熙岭，每一顿饭都是家宴' } },
+      { label: '新村民/主理人故事', type: 'craft' as TemplateType, formData: { name: '熙岭新村民故事', highlights: '从城里来的人，在熙岭开民宿、做文创、种茶叶，他们为什么留下来的', price: '免费观看', location: '福建省宁德市屏南县熙岭乡', contact: '微信：xiling_story / 电话：0593-XXXX555', slogan: '他们选择了熙岭，你也来看看' } },
+      { label: '村级文旅活动宣传', type: 'village-event' as TemplateType, formData: { name: '熙岭乡村文旅活动', highlights: '春季采茶节、夏季纳凉会、秋季丰收宴、冬季年味市集，四季都有活动', price: '大部分活动免费参加', location: '福建省宁德市屏南县熙岭乡', contact: '微信：xiling_event / 电话：0593-XXXX444', slogan: '熙岭四季有活动，随时来都赶趟' } },
     ],
   },
   {
     key: 'siping', label: '四坪村',
     directions: [
-      { label: '四坪柿子/柿饼宣传', type: 'rural-goods' },
-      { label: '四坪慢生活', type: 'homestay' },
-      { label: '亲子研学', type: 'village-event' },
-      { label: '天文馆/大食物馆', type: 'village-event' },
-      { label: '民宿、咖啡、文创店宣传', type: 'homestay' },
+      { label: '四坪柿子/柿饼宣传', type: 'rural-goods' as TemplateType, formData: { name: '四坪村老柿饼', highlights: '老村古树上结的柿子，自然晾晒，不添加任何东西，甜糯软香，适合当伴手礼送人', price: '一盒6个装58元，两盒100元，可快递', location: '福建省宁德市屏南县熙岭乡四坪村', contact: '微信：siping2024 / 电话：138XXXX1234', slogan: '尝一口四坪的秋天，把老村的味道带回家' } },
+      { label: '四坪慢生活', type: 'homestay' as TemplateType, formData: { name: '四坪慢生活体验', highlights: '没有汽车的村庄，走路就能逛完，晒太阳、发呆、喝山泉水泡的茶', price: '民宿120-200元/晚，含早餐', location: '福建省宁德市屏南县熙岭乡四坪村', contact: '微信：siping_life / 电话：159XXXX5678', slogan: '来四坪，过一天没有闹钟的日子' } },
+      { label: '亲子研学', type: 'village-event' as TemplateType, formData: { name: '四坪村亲子研学营', highlights: '带孩子来四坪做柿饼、看星空、逛大食物馆，在村里学课堂学不到的东西', price: '一大一小398元/天，含午餐和材料', location: '福建省宁德市屏南县熙岭乡四坪村', contact: '微信：siping_edu / 电话：138XXXX9012', slogan: '最好的课堂在村子里' } },
+      { label: '天文馆/大食物馆', type: 'village-event' as TemplateType, formData: { name: '四坪天文馆和大食物馆', highlights: '乡村里居然有天文望远镜！大食物馆讲的是从田间到餐桌的故事，孩子超喜欢', price: '天文馆门票30元，大食物馆免费', location: '福建省宁德市屏南县熙岭乡四坪村', contact: '微信：siping_museum / 电话：0593-XXXX333', slogan: '四坪的惊喜，不止柿子' } },
+      { label: '民宿、咖啡、文创店宣传', type: 'homestay' as TemplateType, formData: { name: '四坪村民宿和文创小店', highlights: '老房子改的民宿和咖啡馆，还有卖柿饼文创的小店，适合拍照发朋友圈', price: '民宿150-250元/晚，咖啡20-35元', location: '福建省宁德市屏南县熙岭乡四坪村', contact: '微信：siping_shop / 电话：159XXXX6543', slogan: '在四坪的老屋里喝一杯咖啡' } },
     ],
   },
   {
     key: 'longtan', label: '龙潭古镇', aliases: ['龙塘古镇'],
     directions: [
-      { label: '龙潭古镇夜游', type: 'village-event' },
-      { label: '石板街打卡路线', type: 'homestay' },
-      { label: '黄酒故事', type: 'craft' },
-      { label: '四平戏/非遗体验', type: 'craft' },
-      { label: '古镇民宿住一晚', type: 'homestay' },
-      { label: '古镇餐饮推荐', type: 'rural-food' },
+      { label: '龙潭古镇夜游', type: 'village-event' as TemplateType, formData: { name: '龙潭古镇夜游', highlights: '灯笼亮起来，溪水映着光，石板街上有音乐和笑声，夜里的龙潭比白天更美', price: '免费游览', location: '福建省宁德市屏南县龙潭古镇', contact: '微信：longtan_night / 电话：0593-XXXX111', slogan: '龙潭的夜，来了就不想走' } },
+      { label: '石板街打卡路线', type: 'homestay' as TemplateType, formData: { name: '龙潭古镇石板街打卡路线', highlights: '从村口牌坊到溪边老桥，一条石板街走下来，每个角落都能拍出大片', price: '免费游览，导游讲解50元/次', location: '福建省宁德市屏南县龙潭古镇', contact: '微信：longtan_photo / 电话：138XXXX7890', slogan: '龙潭的石板街，一步一景' } },
+      { label: '黄酒故事', type: 'craft' as TemplateType, formData: { name: '龙潭黄酒故事', highlights: '屏南老酒非遗酿造，糯米山泉水古法发酵，一坛酒要等三年，喝一口就知道值', price: '体验酿酒50元/人，成品酒68-128元/坛', location: '福建省宁德市屏南县龙潭古镇', contact: '微信：longtan_wine / 电话：159XXXX2345', slogan: '三年等一坛，龙潭黄酒喝的是时间' } },
+      { label: '四平戏/非遗体验', type: 'craft' as TemplateType, formData: { name: '龙潭四平戏非遗体验', highlights: '四平戏是国家级非遗，在龙潭古镇的戏台上，老艺人还会唱，你可以学两招', price: '免费观看，学戏体验80元/人', location: '福建省宁德市屏南县龙潭古镇', contact: '微信：longtan_opera / 电话：0593-XXXX222', slogan: '百年老戏还在唱，你来听一段' } },
+      { label: '古镇民宿住一晚', type: 'homestay' as TemplateType, formData: { name: '龙潭古镇民宿', highlights: '石板街旁的老屋民宿，推窗看到溪水，晚上听水声入睡，早上被鸟叫醒', price: '平日268元/晚，周末358元/晚，含早餐', location: '福建省宁德市屏南县龙潭古镇', contact: '微信：longtan_inn / 电话：159XXXX5678', slogan: '来龙潭住一晚，听溪水讲故事' } },
+      { label: '古镇餐饮推荐', type: 'rural-food' as TemplateType, formData: { name: '龙潭古镇美食推荐', highlights: '米烧兔、秋菇炖土鸡、农家手打面、自酿黄酒，龙潭人待客的拿手菜', price: '人均60-100元，丰俭由人', location: '福建省宁德市屏南县龙潭古镇', contact: '微信：longtan_food / 电话：138XXXX6789', slogan: '龙潭的饭，吃饱了还想再来一碗' } },
     ],
   },
 ];
@@ -342,9 +342,16 @@ export default function HomePage() {
 
   const handleSelectType = useCallback((type: TemplateType) => setSelectedType(type), []);
 
-  const handleSelectLocalDirection = useCallback((caseKey: string, direction: string) => {
+  const handleSelectLocalDirection = useCallback((caseKey: string, directionLabel: string) => {
+    const lc = LOCAL_CASES.find(c => c.key === caseKey);
+    const dir = lc?.directions.find(d => d.label === directionLabel);
+    if (dir) {
+      setSelectedType(dir.type);
+      setFormData(dir.formData);
+    }
     setLocalCase(caseKey);
-    setLocalDirection(direction);
+    setLocalDirection(directionLabel);
+    setStep(2); // 跳到填写信息步骤
   }, []);
 
   const handleFormChange = useCallback((key: keyof FormData, value: string) => {
