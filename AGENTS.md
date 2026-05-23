@@ -45,14 +45,14 @@
 
 1. **POST /api/generate** - 生成AI提示词（短视频分镜+海报图片+发布文案+标签）
    - 参数：type, formData, photoCount, localCase, localDirection
-   - 返回：videoPrompt, videoPromptCN, posterPrompt, posterPromptCN, posterStyle, posterAspectRatio, publishCopy, tags
+   - 返回：videoPrompt, posterPrompt, posterStyle, posterAspectRatio, publishCopy, tags
 
 ## 核心生成逻辑
 
 - `data/templates.ts` 包含5种场景模板的生成规则
 - 每种模板有：videoPromptGenerator, posterGenerator, publishTemplate, tagsTemplate
-- 短视频提示词：一段完整英文描述（包含5段场景3秒分镜+转场+整体风格），可直接粘贴到Sora/可灵/Runway
-- 海报提示词：一段完整英文描述（构图+背景+配色+文字+风格），可直接粘贴到Midjourney/DALL-E/SD
+- 短视频提示词：一段完整中文描述（450字以内，5段场景3秒分镜，强调人物出镜参与，只有旁白配音不要出现字幕和文字），可直接粘贴到Sora/可灵/Runway
+- 海报提示词：一段完整中文描述（构图+背景+配色+人物出镜+风格），可直接粘贴到Midjourney/DALL-E/SD
 - 照片参考：上传的照片数量会作为参考信息融入提示词（photoDesc）
 - 地方案例：屏南县、熙岭乡、四坪村、龙潭古镇（兼容"龙塘古镇"）
 

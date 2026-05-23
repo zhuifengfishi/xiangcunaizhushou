@@ -1,4 +1,4 @@
-// 场景模板定义 — 输出两版完整AI提示词（短视频分镜 + 宣传海报）
+// 场景模板定义 — 输出两版完整中文AI提示词（短视频分镜 + 宣传海报）
 
 export type TemplateType = 'rural-goods' | 'homestay' | 'rural-food' | 'craft' | 'village-event';
 
@@ -12,10 +12,8 @@ export interface FormData {
 }
 
 export interface GenerateResult {
-  videoPrompt: string;       // AI短视频完整提示词（一段完整英文，可直接粘贴到Sora/可灵等）
-  videoPromptCN: string;     // 短视频提示词中文说明
-  posterPrompt: string;      // 宣传海报完整提示词（一段完整英文，可直接粘贴到Midjourney/DALL-E等）
-  posterPromptCN: string;    // 海报提示词中文说明
+  videoPrompt: string;       // AI短视频完整提示词（中文，450字以内，可直接粘贴到Sora/可灵等）
+  posterPrompt: string;      // 宣传海报完整提示词（中文，可直接粘贴到Midjourney/DALL-E等）
   posterStyle: string;       // 海报推荐风格
   posterAspectRatio: string; // 海报推荐比例
   publishCopy: string;       // 发布文案（抖音/视频号/小红书）
@@ -29,9 +27,7 @@ export const templateConfig: Record<TemplateType, {
   description: string;
   examples: string[];
   videoPromptGenerator: (data: FormData, localLabel?: string, photoDesc?: string) => string;
-  videoPromptCNGenerator: (data: FormData, localLabel?: string) => string;
   posterGenerator: (data: FormData, localLabel?: string, photoDesc?: string) => string;
-  posterCNGenerator: (data: FormData, localLabel?: string) => string;
   posterStyle: string;
   posterAspectRatio: string;
   publishTemplate: (data: FormData) => string;
@@ -43,22 +39,17 @@ export const templateConfig: Record<TemplateType, {
     description: '水果、茶叶、蜂蜜、米面、菌菇、干货、腊味、手作食品',
     examples: ['屏南高山茶', '四坪柿饼', '土蜂蜜', '农家腊肉'],
     videoPromptGenerator: (data, localLabel, photoDesc) => {
-      const loc = localLabel || data.location || 'countryside';
-      const ref = photoDesc ? ` Reference style: ${photoDesc}.` : '';
-      return `A 15-second cinematic vertical video (9:16) showcasing "${data.name || 'local product'}" from ${loc}. Scene 1 (0-3s): Close-up of ${data.name || 'the product'} displayed on a rustic wooden table, natural sunlight streaming through a window, warm golden hour lighting, shallow depth of field. Scene 2 (3-6s): Hands carefully arranging and presenting ${data.name || 'the product'}, showing texture and quality details, droplets of moisture on surface, macro shot, cinematic lighting. Scene 3 (6-9s): Wide shot of beautiful ${loc} countryside landscape with terraced fields and traditional village houses, morning mist in the valley, aerial drone view. Scene 4 (9-12s): Farmer packing ${data.name || 'the product'} into a rustic gift box with straw padding, hands tying a cloth ribbon, warm indoor light, authentic handmade feel. Scene 5 (12-15s): Beautifully packaged gift box on a sunlit doorstep, surrounded by autumn leaves and wildflowers, warm afternoon light, inviting and heartwarming atmosphere. Transitions: smooth crossfade between scenes. Overall mood: warm, authentic, trustworthy. Photorealistic, 4K quality.${ref}`;
-    },
-    videoPromptCNGenerator: (data, localLabel) => {
       const loc = localLabel || data.location || '乡村';
-      return `15秒竖屏短视频：第1段特写${data.name || '产品'}摆木桌上暖光；第2段手展示产品细节质感；第3段航拍${loc}乡村山水；第4段村民打包产品手工包装；第5段打包成品门口秋叶野花温馨收尾。转场平滑淡入淡出，整体温暖真实可信。`;
+      const name = data.name || '乡村好物';
+      const ref = photoDesc ? `画面参考用户提供的照片风格和内容。` : '';
+      const prompt = `15秒竖屏短视频，9:16比例。讲述${name}的故事：第1段，你站在${loc}的田间山头，手里捧着刚采摘的${name}，身后是连绵的山和梯田，阳光照在脸上，笑着向镜头展示手中的好东西；第2段，你蹲在晾晒架旁，翻动${name}，展示自然晾晒的过程，风吹过来，你能闻到阳光的味道；第3段，你走进自家作坊，亲手打包${name}，用稻草和布包好，动作熟练又认真；第4段，你端着打包好的${name}走出院门，夕阳洒在泥墙上，回头对着镜头说：${data.slogan || '就是好吃'}；第5段，远景收尾，${loc}的全貌，炊烟升起，你站在村口挥手告别。整体风格：温暖、真实、有烟火气，只有旁白配音，不要出现任何字幕和文字，画质4K电影感。${ref}`;
+      return prompt.slice(0, 450);
     },
     posterGenerator: (data, localLabel, photoDesc) => {
-      const loc = localLabel || data.location || 'countryside';
-      const ref = photoDesc ? ` Visual reference from user photos: ${photoDesc}.` : '';
-      return `A warm and inviting promotional poster for "${data.name || 'Local Product'}" from ${loc}. Center composition: the product displayed on a rustic wooden surface with natural props like woven baskets, dried flowers, and autumn leaves. Background: soft-focus ${loc} village landscape with terraced fields and traditional architecture. Warm golden color palette with earthy tones. Hand-drawn Chinese calligraphy style title text "${data.name || '乡村好物'}" at the top. Subtitle "${data.slogan || ''}" in elegant font at bottom. Vintage paper texture overlay. Professional product photography meets folk art style, 4K, high detail.${ref}`;
-    },
-    posterCNGenerator: (data, localLabel) => {
       const loc = localLabel || data.location || '乡村';
-      return `以${data.name || '产品'}为主体的宣传海报，${loc}乡村背景，暖色调手工书法风标题，复古纸张质感，专业摄影+民间艺术风格`;
+      const name = data.name || '乡村好物';
+      const ref = photoDesc ? `参考用户提供的照片风格。` : '';
+      return `一张${name}的宣传海报，竖版3:4比例。画面中央是你本人站在${loc}的田野间，手里端着一盘${name}，身后是金色梯田和远山，阳光从侧面打过来，温暖又真实。前景点缀稻草和竹篮，${name}在盘中色泽诱人、细节清晰。整体色调暖黄大地色，复古纸张质感。画面上方用书法风格写"${name}"，下方写"${data.slogan || '来自乡村的好味道'}"。风格：中国乡村纪实摄影与民间年画融合，温暖质朴，4K高清。${ref}`;
     },
     posterStyle: '复古暖色 + 乡村实景 + 书法字体',
     posterAspectRatio: '3:4（竖版海报）',
@@ -79,22 +70,17 @@ export const templateConfig: Record<TemplateType, {
     description: '民宿、古村、露营、避暑、亲子游、周末游',
     examples: ['龙潭溪边民宿', '古村露营地', '屏南避暑小院'],
     videoPromptGenerator: (data, localLabel, photoDesc) => {
-      const loc = localLabel || data.location || 'village';
-      const ref = photoDesc ? ` Reference style: ${photoDesc}.` : '';
-      return `A 15-second cinematic vertical video (9:16) showcasing "${data.name || 'countryside homestay'}" in ${loc}. Scene 1 (0-3s): Establishing aerial wide shot of ${data.name || 'the homestay'} nestled in ${loc} village, traditional stone and wood architecture, morning sunlight, surrounding mountains and streams. Scene 2 (3-6s): Interior shot of cozy room, wooden furniture, white linen bedding, window with view of stream and green mountains, soft natural light, peaceful atmosphere. Scene 3 (6-9s): Person walking along a stone-paved path in ${loc}, passing traditional village houses with hanging red lanterns, gentle stream flowing, dappled sunlight through old trees, slow motion. Scene 4 (9-12s): Person sitting on wooden terrace drinking tea, overlooking misty mountain valley at golden hour, peaceful and contemplative mood. Scene 5 (12-15s): Magical night scene with warm interior lights glowing through windows, starry sky above, fireflies near the stream, stone path lit by lantern light, dreamy and romantic atmosphere. Transitions: smooth crossfade. Overall mood: serene, romantic, inviting. Cinematic, 4K.${ref}`;
-    },
-    videoPromptCNGenerator: (data, localLabel) => {
       const loc = localLabel || data.location || '乡村';
-      return `15秒竖屏短视频：第1段航拍${data.name || '民宿'}坐落在${loc}山水间；第2段室内温馨房间窗含山水；第3段石板路漫步红灯笼溪水潺潺；第4段露台品茶远眺云雾山谷；第5段夜色暖光星空萤火虫灯笼引路。转场平滑，整体宁静浪漫。`;
+      const name = data.name || '乡村民宿';
+      const ref = photoDesc ? `画面参考用户提供的照片风格和内容。` : '';
+      const prompt = `15秒竖屏短视频，9:16比例。带你走进${name}：第1段，你沿着${loc}的石板路走来，两旁是老屋和红灯笼，溪水在脚边流淌，你边走边回头看镜头微笑；第2段，你推开${name}的木门，走进房间，木质家具、白床品、窗外是山和溪，你坐在窗边深呼吸，表情满足；第3段，你在露台上泡茶，远处云雾缭绕的山谷，夕阳照在脸上，安静而惬意；第4段，夜幕降临，你在院子里抬头看星空，屋里暖光从窗户透出来，溪边有萤火虫飞舞；第5段，你站在门口挥手，身后灯笼光暖暖的，对着镜头说：${data.slogan || '来住一晚吧'}。整体风格：宁静、治愈、有归属感，只有旁白配音，不要出现任何字幕和文字，4K电影画质。${ref}`;
+      return prompt.slice(0, 450);
     },
     posterGenerator: (data, localLabel, photoDesc) => {
-      const loc = localLabel || data.location || 'village';
-      const ref = photoDesc ? ` Visual reference from user photos: ${photoDesc}.` : '';
-      return `A dreamy promotional poster for "${data.name || 'Countryside Homestay'}" in ${loc}. Main image: a charming traditional stone-and-wood house with warm window lights, set against misty green mountains and a clear stream. Foreground: stone path with red lanterns leading to the entrance. Color palette: warm amber and forest green. Title "${data.name || '民宿'}" in elegant brush calligraphy at top. Tagline "${data.slogan || ''}" at bottom. Soft watercolor texture overlay. Style: Chinese ink painting meets modern travel photography, premium feel, 4K.${ref}`;
-    },
-    posterCNGenerator: (data, localLabel) => {
       const loc = localLabel || data.location || '乡村';
-      return `${data.name || '民宿'}宣传海报，${loc}山水背景，石木老屋红灯笼引路，水墨风+现代摄影融合`;
+      const name = data.name || '乡村民宿';
+      const ref = photoDesc ? `参考用户提供的照片风格。` : '';
+      return `一张${name}的宣传海报，竖版3:4比例。画面中央是你本人坐在${loc}老屋的木门槛上，身旁是石板路和红灯笼，身后是溪水和对面的青山，暖光从屋里洒出来映在你脸上，悠闲自在。前景有茶杯和竹椅，远处有云雾绕山。整体色调暖琥珀色和森林绿，水墨渲染质感。画面上方写"${name}"，下方写"${data.slogan || '来乡村住一晚'}"。风格：中国水墨画与现代旅行摄影融合，静谧治愈，4K高清。${ref}`;
     },
     posterStyle: '水墨风 + 实景摄影 + 暖光氛围',
     posterAspectRatio: '3:4（竖版海报）',
@@ -115,22 +101,17 @@ export const templateConfig: Record<TemplateType, {
     description: '农家菜、土灶饭、地方小吃、宴席、黄酒、团餐',
     examples: ['土灶柴火饭', '屏南黄酒', '古村长桌宴'],
     videoPromptGenerator: (data, localLabel, photoDesc) => {
-      const loc = localLabel || data.location || 'village';
-      const ref = photoDesc ? ` Reference style: ${photoDesc}.` : '';
-      return `A 15-second cinematic vertical video (9:16) showcasing "${data.name || 'village kitchen'}" in ${loc}. Scene 1 (0-3s): Close-up of sizzling signature dish, steam rising, oil glistening, dramatic food photography lighting, shot from above, dark rustic background. Scene 2 (3-6s): Cook stirring a large iron wok over wood fire, flames dancing beneath, smoke rising, hands skillfully tossing ingredients, warm firelight illuminating the cook's face. Scene 3 (6-9s): Fresh vegetables being harvested from a village garden, hands picking produce, morning dew on leaves, vibrant colors, farm-to-table story. Scene 4 (9-12s): Family and friends gathered around a large round table full of dishes, laughing and eating, chopsticks picking up food, warm indoor lighting, authentic and joyful atmosphere. Scene 5 (12-15s): Exterior of traditional restaurant with hand-painted wooden sign, warm light spilling from doorway, ${loc} scenery in background, cozy and welcoming, golden hour. Transitions: smooth crossfade. Overall mood: appetizing, warm, lively. Cinematic, 4K.${ref}`;
-    },
-    videoPromptCNGenerator: (data, localLabel) => {
       const loc = localLabel || data.location || '乡村';
-      return `15秒竖屏短视频：第1段招牌菜特写热气腾腾俯拍；第2段柴火灶大铁锅翻炒火苗跳跃；第3段菜地现摘新鲜蔬菜带露珠；第4段一大家人围坐圆桌吃${data.name || '农家菜'}热闹温馨；第5段${loc}饭馆门面手写招牌暖光。转场平滑，整体食欲感满满。`;
+      const name = data.name || '农家菜';
+      const ref = photoDesc ? `画面参考用户提供的照片风格和内容。` : '';
+      const prompt = `15秒竖屏短视频，9:16比例。带你吃${name}：第1段，你掀开大铁锅盖，热气腾腾的菜冒着白烟，你夹起一块放进嘴里，眼睛一亮，竖起大拇指；第2段，你蹲在柴火灶前添柴，火苗舔着锅底，你翻动着铁锅，动作利落，脸上被火光照得通红；第3段，你带镜头走进自家菜地，弯腰摘菜，菜叶上还有露珠，你对着镜头说：新鲜着呢；第4段，你端着一桌菜从厨房出来，家人朋友围坐在一起，热热闹闹，你举杯说：${data.slogan || '来吃！'}；第5段，${loc}的傍晚，你站在饭馆门口，身后是手写招牌和暖光，笑着招手。整体风格：食欲感、热闹、有烟火气，只有旁白配音，不要出现任何字幕和文字，4K画质。${ref}`;
+      return prompt.slice(0, 450);
     },
     posterGenerator: (data, localLabel, photoDesc) => {
-      const loc = localLabel || data.location || 'village';
-      const ref = photoDesc ? ` Visual reference from user photos: ${photoDesc}.` : '';
-      return `An appetizing promotional poster for "${data.name || 'Village Kitchen'}" in ${loc}. Center: a beautifully arranged rustic table with signature dishes in ceramic bowls and plates, steam rising, chopsticks, and a clay pot. Background: traditional wood-fire kitchen with iron wok, warm amber glow. Color palette: warm oranges, deep reds, and earthy browns. Title "${data.name || '农家菜'}" in bold brushstroke calligraphy. Tagline "${data.slogan || ''}" in smaller text. Texture: aged rice paper overlay. Style: mouth-watering food photography meets Chinese folk art, 4K.${ref}`;
-    },
-    posterCNGenerator: (data, localLabel) => {
       const loc = localLabel || data.location || '乡村';
-      return `${data.name || '农家菜'}美食海报，${loc}乡村厨房背景，土灶铁锅，粗碗盛菜，食欲感满满`;
+      const name = data.name || '农家菜';
+      const ref = photoDesc ? `参考用户提供的照片风格。` : '';
+      return `一张${name}的宣传海报，竖版3:4比例。画面中央是你本人站在${loc}的柴火灶前，手里端着一盘冒着热气的招牌菜，灶火映在你脸上，笑容朴实。身后是传统土灶和挂着的腊肉，前景有粗瓷碗和竹筷，桌上摆满农家菜。整体色调暖橙色和棕红色，食欲感满满。画面上方写"${name}"，下方写"${data.slogan || '来吃一顿地道的'}"。风格：美食纪实摄影与民间画风融合，热气腾腾，4K高清。${ref}`;
     },
     posterStyle: '美食摄影 + 民间画风 + 暖橙色调',
     posterAspectRatio: '3:4（竖版海报）',
@@ -151,22 +132,17 @@ export const templateConfig: Record<TemplateType, {
     description: '戏曲、酿造、木作、编织、陶艺、传统工艺',
     examples: ['四平戏', '屏南老酒', '手工竹编', '陶艺体验'],
     videoPromptGenerator: (data, localLabel, photoDesc) => {
-      const loc = localLabel || data.location || 'village';
-      const ref = photoDesc ? ` Reference style: ${photoDesc}.` : '';
-      return `A 15-second cinematic vertical video (9:16) showcasing "${data.name || 'traditional craft'}" from ${loc}. Scene 1 (0-3s): Artistic close-up of finished ${data.name || 'craft'} piece, intricate details and textures, displayed on aged wooden surface, dramatic side lighting highlighting craftsmanship. Scene 2 (3-6s): Skilled elderly artisan's hands working on ${data.name || 'the craft'}, close-up of fingers and tools, concentration and mastery visible in every movement, warm workshop lighting. Scene 3 (6-9s): Portrait of the craft master in their ${loc} workshop, surrounded by tools and finished pieces, wearing traditional clothing, respectful composition, natural window light, documentary style. Scene 4 (9-12s): Young visitor learning from the master, hands being guided, smiles and focus, workshop interior with raw materials, warm and hopeful atmosphere. Scene 5 (12-15s): Finished products displayed at a ${loc} village market stall, traditional cloth backdrop, visitors admiring and purchasing, warm afternoon light, vibrant yet authentic atmosphere. Transitions: smooth crossfade. Overall mood: reverent, cultural, hopeful. Cinematic, 4K.${ref}`;
-    },
-    videoPromptCNGenerator: (data, localLabel) => {
       const loc = localLabel || data.location || '乡村';
-      return `15秒竖屏短视频：第1段${data.name || '手艺成品'}精美细节特写侧光；第2段老艺人双手制作专注熟练工作坊暖光；第3段传承人${loc}工作坊肖像工具成品环绕；第4段年轻人跟着传承人学手把手教传承希望；第5段成品在${loc}集市展示游客围观暖光。转场平滑，整体文化厚重感。`;
+      const name = data.name || '传统手艺';
+      const ref = photoDesc ? `画面参考用户提供的照片风格和内容。` : '';
+      const prompt = `15秒竖屏短视频，9:16比例。记录${name}的传承：第1段，你站在${loc}的工作坊门口，身后的架子上摆满了${name}的作品，你拿起一件成品向镜头展示，满脸自豪；第2段，你坐下来开始制作，双手翻飞，动作行云流水，你偶尔抬头看镜头，眼里全是专注和热爱；第3段，你带着镜头看墙上的老照片和旧工具，指指这个摸摸那个，讲述传承了多少年；第4段，你手把手教一个年轻人，两人相视而笑，你点点头，眼神里有欣慰；第5段，你抱着成品走出工作坊，站在${loc}的石板路上，夕阳照在你和作品上，你说：${data.slogan || '手艺不能丢'}。整体风格：庄重、温暖、有文化厚度，只有旁白配音，不要出现任何字幕和文字，4K画质。${ref}`;
+      return prompt.slice(0, 450);
     },
     posterGenerator: (data, localLabel, photoDesc) => {
-      const loc = localLabel || data.location || 'village';
-      const ref = photoDesc ? ` Visual reference from user photos: ${photoDesc}.` : '';
-      return `A culturally rich promotional poster for "${data.name || 'Traditional Craft'}" from ${loc}. Main image: artisan's hands in motion creating the craft, with finished pieces displayed around. Background: traditional ${loc} village workshop interior with wooden beams and hanging tools. Color palette: deep indigo, warm gold, and aged paper white. Title "${data.name || '非遗手艺'}" in artistic seal-script calligraphy. Tagline "${data.slogan || ''}" in flowing script. Texture: silk fabric and aged rice paper overlay. Style: National Geographic meets Chinese cultural heritage art, 4K.${ref}`;
-    },
-    posterCNGenerator: (data, localLabel) => {
       const loc = localLabel || data.location || '乡村';
-      return `${data.name || '非遗手艺'}文化海报，${loc}工作坊背景，匠人双手创作，成品环绕，深蓝+金色`;
+      const name = data.name || '传统手艺';
+      const ref = photoDesc ? `参考用户提供的照片风格。` : '';
+      return `一张${name}的宣传海报，竖版3:4比例。画面中央是你本人正在制作${name}，双手特写，身边环绕着成品和工具，身后是${loc}传统工作坊的木梁和老墙。你神情专注，光线从侧面打来，突出手上的动作和作品的细节。整体色调深靛蓝与暖金色交织，丝绸与古纸质感。画面上方写"${name}"篆书风格，下方写"${data.slogan || '匠心传承'}"。风格：国家地理纪实与中国文化遗产艺术融合，厚重典雅，4K高清。${ref}`;
     },
     posterStyle: '文化纪实 + 金蓝配色 + 篆书字体',
     posterAspectRatio: '3:4（竖版海报）',
@@ -187,22 +163,17 @@ export const templateConfig: Record<TemplateType, {
     description: '丰收节、市集、音乐节、采摘节、民俗表演、研学活动、古镇/古村宣传',
     examples: ['丰收节', '古村民俗表演', '亲子研学营'],
     videoPromptGenerator: (data, localLabel, photoDesc) => {
-      const loc = localLabel || data.location || 'village';
-      const ref = photoDesc ? ` Reference style: ${photoDesc}.` : '';
-      return `A 15-second cinematic vertical video (9:16) promoting "${data.name || 'village event'}" at ${loc}. Scene 1 (0-3s): Grand establishing aerial shot of ${data.name || 'the event'} at ${loc}, decorative banners and red lanterns hanging across traditional streets, crowds gathering, festive atmosphere, golden hour. Scene 2 (3-6s): Dynamic shot of the main event activity, people participating and enjoying, traditional performances, music and dancing, vibrant energy, colorful costumes, slow motion highlights. Scene 3 (6-9s): Visitors walking through ${loc} scenic spots, families taking photos, children playing, couples enjoying the atmosphere, warm and genuine interactions. Scene 4 (9-12s): Local specialty food stalls, steaming snacks, colorful local products, vendors smiling and serving, close-up of delicious food being prepared, warm market atmosphere. Scene 5 (12-15s): Sunset shot of ${loc} with event decorations still glowing, families heading home with happy faces, warm sky colors reflecting on old rooftops, nostalgic and hopeful feeling. Transitions: smooth crossfade. Overall mood: festive, warm, community. Cinematic, 4K.${ref}`;
-    },
-    videoPromptCNGenerator: (data, localLabel) => {
       const loc = localLabel || data.location || '乡村';
-      return `15秒竖屏短视频：第1段航拍${loc}${data.name || '活动'}现场红旗灯笼人群聚集喜庆；第2段活动亮点表演互动热闹彩衣飞舞；第3段游客${loc}景点游览拍照玩耍真实互动；第4段特色美食摊位热气小吃五彩特产；第5段夕阳下${loc}活动余晖笑脸回家暖色。转场平滑，整体喜庆热闹。`;
+      const name = data.name || '乡村活动';
+      const ref = photoDesc ? `画面参考用户提供的照片风格和内容。` : '';
+      const prompt = `15秒竖屏短视频，9:16比例。带你逛${name}：第1段，你站在${loc}村口大牌坊下，头顶是红灯笼和彩旗，你兴奋地朝镜头招手说：快来！；第2段，你挤进人群看表演，跟着鼓点拍手，回头对镜头笑，眼里全是兴奋；第3段，你端着一碗热腾腾的小吃，边走边吃，路过一个又一个摊位，指指这个看看那个；第4段，你和一群人在田间地头参与活动，弯腰采摘、动手体验，笑声不断，你举着战利品向镜头展示；第5段，夕阳下你站在${loc}高处，身后是老屋和炊烟，你转过身对着镜头说：${data.slogan || '等你来'}。整体风格：喜庆、热闹、有人情味，只有旁白配音，不要出现任何字幕和文字，4K画质。${ref}`;
+      return prompt.slice(0, 450);
     },
     posterGenerator: (data, localLabel, photoDesc) => {
-      const loc = localLabel || data.location || 'village';
-      const ref = photoDesc ? ` Visual reference from user photos: ${photoDesc}.` : '';
-      return `A vibrant promotional poster for "${data.name || 'Village Event'}" at ${loc}. Main image: festive village scene with red lanterns, traditional decorations, and crowds celebrating. Background: ${loc} traditional architecture and mountains. Color palette: festive red and gold with jade green accents. Title "${data.name || '乡村活动'}" in bold festive calligraphy at top. Date and location info in decorative frames. Tagline "${data.slogan || ''}" at bottom. Texture: red paper with gold foil accents. Style: Chinese New Year poster meets modern event design, celebratory and inviting, 4K.${ref}`;
-    },
-    posterCNGenerator: (data, localLabel) => {
       const loc = localLabel || data.location || '乡村';
-      return `${data.name || '乡村活动'}宣传海报，${loc}喜庆场景红灯笼，金绿点缀，年画风+现代设计`;
+      const name = data.name || '乡村活动';
+      const ref = photoDesc ? `参考用户提供的照片风格。` : '';
+      return `一张${name}的宣传海报，竖版3:4比例。画面中央是你本人站在${loc}的热闹街头，周围是红灯笼、彩旗和欢庆的人群，你笑着举起手中的特色物品，身后是传统古建筑和远山。前景有美食摊位和手工艺品，人们三五成群其乐融融。整体色调喜庆红金色配翠绿点缀，金色箔纸装饰。画面上方写"${name}"喜庆书法，下方写"${data.slogan || '等你来'}"。风格：中国传统年画与现代活动设计融合，欢庆热烈，4K高清。${ref}`;
     },
     posterStyle: '喜庆红金 + 年画风格 + 装饰框',
     posterAspectRatio: '3:4（竖版海报）',
@@ -271,11 +242,11 @@ export const localCaseConfig: Record<string, {
 // ========== 根据上传照片生成参考描述 ==========
 function buildPhotoDescription(photoCount: number): string {
   if (photoCount === 0) return '';
-  if (photoCount === 1) return 'based on the single reference photo showing the main subject and environment';
-  if (photoCount === 2) return 'based on the two reference photos showing the subject details and surrounding environment';
-  if (photoCount <= 3) return 'based on the reference photos showing the subject, environment, and contextual details';
-  if (photoCount <= 4) return 'based on the reference photos showing the subject from multiple angles, environment, details, and atmosphere';
-  return 'based on the comprehensive reference photos showing the subject from multiple angles, environment, details, atmosphere, and contextual elements';
+  if (photoCount === 1) return '画面参考用户提供的照片风格和内容。';
+  if (photoCount === 2) return '画面参考用户提供的两张照片的风格和内容细节。';
+  if (photoCount <= 3) return '画面参考用户提供的多张照片，综合场景、细节和氛围。';
+  if (photoCount <= 4) return '画面参考用户提供的多张照片，综合多角度场景、细节、氛围和整体感觉。';
+  return '画面参考用户提供的丰富照片素材，综合多角度场景、细节、氛围和整体感觉来构建画面。';
 }
 
 // ========== 核心生成函数 ==========
@@ -290,13 +261,11 @@ export function generateContent(
   const localLabel = localCase ? localCaseConfig[localCase]?.label : undefined;
   const photoDesc = buildPhotoDescription(photoCount);
 
-  // 生成完整的AI短视频提示词
+  // 生成完整的AI短视频提示词（纯中文，450字以内）
   const videoPrompt = config.videoPromptGenerator(formData, localLabel, photoDesc);
-  const videoPromptCN = config.videoPromptCNGenerator(formData, localLabel);
 
-  // 生成完整的海报图片提示词
+  // 生成完整的海报图片提示词（纯中文）
   const posterPrompt = config.posterGenerator(formData, localLabel, photoDesc);
-  const posterPromptCN = config.posterCNGenerator(formData, localLabel);
 
   // 生成发布文案
   let publishCopy = config.publishTemplate(formData);
@@ -318,9 +287,7 @@ export function generateContent(
 
   return {
     videoPrompt,
-    videoPromptCN,
     posterPrompt,
-    posterPromptCN,
     posterStyle: config.posterStyle,
     posterAspectRatio: config.posterAspectRatio,
     publishCopy,
