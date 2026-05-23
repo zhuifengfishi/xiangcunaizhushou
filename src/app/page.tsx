@@ -334,7 +334,7 @@ export default function HomePage() {
   const [trafficMode, setTrafficMode] = useState<'public' | 'private'>('public');
   const [posterStyleKey, setPosterStyleKey] = useState('default');
   const [publishStyleKey, setPublishStyleKey] = useState('default');
-  const progress = step <= 3 ? ((step - 1) / 2) * 100 : 100;
+  const progress = step <= 2 ? ((step - 1) / 1) * 100 : 100;
 
   const handleSelectType = useCallback((type: TemplateType) => setSelectedType(type), []);
 
@@ -385,7 +385,7 @@ export default function HomePage() {
       const data = await res.json();
       if (data.success) {
         setResult(data.data);
-        setStep(4);
+        setStep(3);
       } else {
         alert(data.error || '生成失败，请重试');
       }
@@ -468,7 +468,6 @@ export default function HomePage() {
               <div className="flex justify-between mt-1 text-xs text-[#8B7355]">
                 <span className={step >= 1 ? 'text-[#C4704B] font-medium' : ''}>①选类型</span>
                 <span className={step >= 2 ? 'text-[#C4704B] font-medium' : ''}>②填信息</span>
-                <span className={step >= 3 ? 'text-[#C4704B] font-medium' : ''}>③生成</span>
               </div>
             </>
           )}
@@ -597,59 +596,9 @@ export default function HomePage() {
               ))}
             </div>
 
-            <div className="flex gap-3 mt-8 sticky bottom-4">
-              <button
-                onClick={() => setStep(1)}
-                className="flex-1 py-4 rounded-2xl text-xl font-bold bg-[#E8D5C4] text-[#6B4226] hover:bg-[#DDD0C0]"
-              >
-                ← 上一步
-              </button>
-              <button
-                onClick={() => setStep(3)}
-                disabled={!formData.name}
-                className={`flex-[2] py-4 rounded-2xl text-xl font-bold transition-all ${
-                  formData.name
-                    ? 'bg-[#C4704B] text-white hover:bg-[#A85A38] shadow-lg'
-                    : 'bg-[#E8D5C4] text-[#8B7355] cursor-not-allowed'
-                }`}
-              >
-                填好了，下一步 →
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* ===== 步骤3：确认生成 ===== */}
-        {step === 3 && (
-          <div className="animate-fade-in-up">
-            <h2 className="text-2xl font-bold text-[#3D2B1F] mb-2">检查一下，然后生成</h2>
-            <p className="text-[#8B7355] mb-6 text-lg">确认信息没问题，点下面大按钮就行</p>
-
-            <div className="bg-white rounded-2xl border border-[#E8D5C4] p-5 mb-4 space-y-3">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-bold text-[#8B7355]">类型：</span>
-                <span className="font-bold text-[#3D2B1F]">
-                  {TYPE_OPTIONS.find(t => t.type === selectedType)?.icon}{' '}
-                  {TYPE_OPTIONS.find(t => t.type === selectedType)?.label}
-                </span>
-                {localCase && localDirection && (
-                  <span className="text-sm bg-[#FFF0E0] text-[#C4704B] px-2 py-0.5 rounded-full">
-                    {LOCAL_CASES.find(lc => lc.key === localCase)?.label}·{localDirection}
-                  </span>
-                )}
-              </div>
-              {(TYPE_QUESTIONS[selectedType!] || []).flatMap(q => q.subFields).map(sf => formData[sf.key] ? (
-                <div key={sf.key}>
-                  <span className="text-sm font-bold text-[#8B7355]">{FIELD_LABELS[sf.key]}</span>
-                  <p className="text-[#3D2B1F]">{formData[sf.key]}</p>
-                </div>
-              ) : null)}
-
-            </div>
-
             {/* 生成说明 */}
-            <div className="bg-[#FFF0E0] rounded-2xl p-4 mb-6 border border-[#E8D5C4]">
-              <div className="font-bold text-[#6B4226] mb-2">生成后会给你两种提示词，每种分公域/私域：</div>
+            <div className="bg-[#FFF0E0] rounded-2xl p-4 mt-6 border border-[#E8D5C4]">
+              <div className="font-bold text-[#6B4226] mb-2">点按钮后会给你两种提示词，每种分公域/私域：</div>
               <div className="space-y-2">
                 <div className="flex gap-3">
                   <div className="flex-1 bg-white rounded-xl p-3 border border-[#E8D5C4]">
@@ -678,15 +627,20 @@ export default function HomePage() {
               </div>
             </div>
 
-            <div className="flex gap-3 sticky bottom-4">
-              <button onClick={() => setStep(2)} className="flex-1 py-4 rounded-2xl text-xl font-bold bg-[#E8D5C4] text-[#6B4226] hover:bg-[#DDD0C0]">
-                ← 修改
+            <div className="flex gap-3 mt-6 sticky bottom-4">
+              <button
+                onClick={() => setStep(1)}
+                className="flex-1 py-4 rounded-2xl text-xl font-bold bg-[#E8D5C4] text-[#6B4226] hover:bg-[#DDD0C0]"
+              >
+                ← 上一步
               </button>
               <button
                 onClick={handleGenerate}
-                disabled={generating}
+                disabled={!formData.name || generating}
                 className={`flex-[2] py-4 rounded-2xl text-xl font-bold transition-all ${
-                  generating ? 'bg-[#E8D5C4] text-[#8B7355] cursor-wait' : 'bg-[#C4704B] text-white hover:bg-[#A85A38] shadow-lg'
+                  formData.name && !generating
+                    ? 'bg-[#C4704B] text-white hover:bg-[#A85A38] shadow-lg'
+                    : 'bg-[#E8D5C4] text-[#8B7355] cursor-not-allowed'
                 }`}
               >
                 {generating ? '正在生成...' : '帮我生成提示词'}
@@ -695,8 +649,8 @@ export default function HomePage() {
           </div>
         )}
 
-        {/* ===== 步骤4：生成结果 ===== */}
-        {step === 4 && result && (
+        {/* ===== 步骤3：生成结果 ===== */}
+        {step === 3 && result && (
           <div className="animate-fade-in-up">
             <h2 className="text-2xl font-bold text-[#3D2B1F] mb-2">提示词生成好了！</h2>
             <p className="text-[#8B7355] mb-6 text-lg">复制下面的提示词，粘贴到AI工具里就能用</p>
