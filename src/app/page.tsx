@@ -134,15 +134,88 @@ const DEMO_CASES: DemoCase[] = [
   },
 ];
 
-const FORM_FIELDS: { key: keyof FormData; label: string; placeholder: string; multiline?: boolean }[] = [
-  { key: 'name', label: '这个东西叫什么？', placeholder: '比如：四坪村老柿饼、龙潭溪边民宿' },
-  { key: 'highlights', label: '它好在哪里？', placeholder: '比如：自然晾晒、不添加、甜糯软香、适合伴手礼', multiline: true },
-  { key: 'price', label: '多少钱 / 怎么预约？', placeholder: '比如：一盒6个装58元包邮 / 平日268元/晚' },
-  { key: 'location', label: '在哪里？', placeholder: '比如：福建省宁德市屏南县熙岭乡四坪村' },
-  { key: 'contact', label: '怎么联系你？', placeholder: '比如：微信：xxx / 电话：1XXXXXX1234' },
-  { key: 'slogan', label: '有没有一句最想说的话？', placeholder: '比如：尝一口四坪的秋天，把老村的味道带回家' },
-];
+// 每个类型3个专属问题，每个问题包含2个子字段
+const TYPE_QUESTIONS: Record<TemplateType, { label: string; subFields: { key: keyof FormData; placeholder: string }[] }[]> = {
+  'rural-goods': [
+    { label: '卖的是什么？叫什么名字？哪里产的？', subFields: [
+      { key: 'name', placeholder: '比如：四坪村老柿饼、高山野茶' },
+      { key: 'location', placeholder: '比如：屏南县熙岭乡四坪村' },
+    ]},
+    { label: '最大的卖点是什么？怎么卖？', subFields: [
+      { key: 'highlights', placeholder: '比如：老村古树上的柿子，自然晾晒，不添加，甜糯软香，适合伴手礼' },
+      { key: 'price', placeholder: '比如：一盒6个装58元，包邮' },
+    ]},
+    { label: '怎么联系你买？最想对买家说的一句话？', subFields: [
+      { key: 'contact', placeholder: '比如：微信：siping2024 / 电话：138XXXX1234' },
+      { key: 'slogan', placeholder: '比如：尝一口四坪的秋天，把老村的味道带回家' },
+    ]},
+  ],
+  'homestay': [
+    { label: '你的民宿叫什么？在哪个村子？', subFields: [
+      { key: 'name', placeholder: '比如：龙潭溪边小院、云端山居' },
+      { key: 'location', placeholder: '比如：屏南县龙潭古镇' },
+    ]},
+    { label: '住这里最吸引人的是什么？多少钱一晚？', subFields: [
+      { key: 'highlights', placeholder: '比如：石板街旁的老屋民宿，推窗见溪水，晚上听水声入睡' },
+      { key: 'price', placeholder: '比如：平日268元/晚，周末358元/晚，含早餐' },
+    ]},
+    { label: '怎么预约？最想对客人说的一句话？', subFields: [
+      { key: 'contact', placeholder: '比如：微信：longtan_inn / 电话：159XXXX5678' },
+      { key: 'slogan', placeholder: '比如：来龙潭住一晚，听溪水讲故事' },
+    ]},
+  ],
+  'rural-food': [
+    { label: '你的店叫什么？在哪儿？', subFields: [
+      { key: 'name', placeholder: '比如：熙岭阿婆土灶饭、黄桥头土菜馆' },
+      { key: 'location', placeholder: '比如：屏南县熙岭乡主街' },
+    ]},
+    { label: '招牌菜/特色是什么？人均多少钱？', subFields: [
+      { key: 'highlights', placeholder: '比如：柴火灶烧的饭，自家菜地现摘，土鸡土鸭散养，10人一桌也够吃' },
+      { key: 'price', placeholder: '比如：人均60-80元，10人桌餐600元起' },
+    ]},
+    { label: '怎么订位？最想对食客说的一句话？', subFields: [
+      { key: 'contact', placeholder: '比如：微信：xilingfood / 电话：137XXXX9012' },
+      { key: 'slogan', placeholder: '比如：城里吃不到的柴火香，来熙岭找阿婆' },
+    ]},
+  ],
+  'craft': [
+    { label: '这门手艺叫什么？在哪里可以看到/体验？', subFields: [
+      { key: 'name', placeholder: '比如：四平戏、屏南老酒酿造、木拱桥营造' },
+      { key: 'location', placeholder: '比如：屏南县龙潭古镇' },
+    ]},
+    { label: '最打动人的地方是什么？体验或购买要多少钱？', subFields: [
+      { key: 'highlights', placeholder: '比如：百年传承的戏曲，老艺人还在坚持，看一次少一次' },
+      { key: 'price', placeholder: '比如：免费观看 / 体验课150元/人 / 伴手礼80元起' },
+    ]},
+    { label: '怎么联系？最想对大家说的一句话？', subFields: [
+      { key: 'contact', placeholder: '比如：现场观看 / 微信：craft_pingnan' },
+      { key: 'slogan', placeholder: '比如：老戏新唱，别让好手艺失传' },
+    ]},
+  ],
+  'village-event': [
+    { label: '宣传的是什么活动/村子？在哪里？', subFields: [
+      { key: 'name', placeholder: '比如：四坪柿子节、龙潭古镇夜游' },
+      { key: 'location', placeholder: '比如：屏南县四坪村' },
+    ]},
+    { label: '最大的看点/亮点是什么？参加要花多少钱？', subFields: [
+      { key: 'highlights', placeholder: '比如：一年一度的柿子节，满村红柿挂枝头，还有手作体验' },
+      { key: 'price', placeholder: '比如：免费参加 / 采摘体验50元/人' },
+    ]},
+    { label: '怎么报名/前往？最想对大家说的一句话？', subFields: [
+      { key: 'contact', placeholder: '比如：自驾导航四坪村 / 微信：siping2024' },
+      { key: 'slogan', placeholder: '比如：来看柿子，顺便住一晚' },
+    ]},
+  ],
+};
 
+const FIELD_LABELS: Record<keyof FormData, string> = {
+  name: '名称',
+  highlights: '卖点',
+  price: '价格',
+  location: '地址',
+  contact: '联系方式',
+  slogan: '一句话',
+};
 const emptyFormData: FormData = { name: '', highlights: '', price: '', location: '', contact: '', slogan: '' };
 
 // ========== 复制按钮组件 ==========
@@ -524,26 +597,24 @@ export default function HomePage() {
             <p className="text-[#8B7355] mb-6 text-lg">就像跟邻居聊天一样，有啥说啥</p>
 
             <div className="space-y-5">
-              {FORM_FIELDS.map(field => (
-                <div key={field.key}>
-                  <label className="block text-lg font-bold text-[#3D2B1F] mb-2">{field.label}</label>
-                  {field.multiline ? (
-                    <textarea
-                      value={formData[field.key]}
-                      onChange={e => handleFormChange(field.key, e.target.value)}
-                      placeholder={field.placeholder}
-                      rows={3}
-                      className="village-input w-full resize-none"
-                    />
-                  ) : (
-                    <input
-                      type="text"
-                      value={formData[field.key]}
-                      onChange={e => handleFormChange(field.key, e.target.value)}
-                      placeholder={field.placeholder}
-                      className="village-input w-full"
-                    />
-                  )}
+              {(TYPE_QUESTIONS[selectedType!] || []).map((q, qi) => (
+                <div key={qi} className="bg-white rounded-2xl border border-[#E8D5C4] p-5">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="w-7 h-7 rounded-full bg-[#C4704B] text-white text-sm font-bold flex items-center justify-center">{qi + 1}</span>
+                    <label className="text-lg font-bold text-[#3D2B1F]">{q.label}</label>
+                  </div>
+                  <div className="space-y-3">
+                    {q.subFields.map(sf => (
+                      <input
+                        key={sf.key}
+                        type="text"
+                        value={formData[sf.key]}
+                        onChange={e => handleFormChange(sf.key, e.target.value)}
+                        placeholder={sf.placeholder}
+                        className="village-input w-full"
+                      />
+                    ))}
+                  </div>
                 </div>
               ))}
             </div>
@@ -637,10 +708,10 @@ export default function HomePage() {
                   </span>
                 )}
               </div>
-              {FORM_FIELDS.map(field => formData[field.key] ? (
-                <div key={field.key}>
-                  <span className="text-sm font-bold text-[#8B7355]">{field.label}</span>
-                  <p className="text-[#3D2B1F]">{formData[field.key]}</p>
+              {(TYPE_QUESTIONS[selectedType!] || []).flatMap(q => q.subFields).map(sf => formData[sf.key] ? (
+                <div key={sf.key}>
+                  <span className="text-sm font-bold text-[#8B7355]">{FIELD_LABELS[sf.key]}</span>
+                  <p className="text-[#3D2B1F]">{formData[sf.key]}</p>
                 </div>
               ) : null)}
               <div>
