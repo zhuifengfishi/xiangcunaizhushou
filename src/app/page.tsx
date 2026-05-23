@@ -328,17 +328,13 @@ export default function HomePage() {
   const [localCase, setLocalCase] = useState<string>('');
   const [localDirection, setLocalDirection] = useState<string>('');
   const [formData, setFormData] = useState<FormData>({ ...emptyFormData });
-  const [photos, setPhotos] = useState<File[]>([]);
-  const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
   const [generating, setGenerating] = useState(false);
   const [result, setResult] = useState<GenerateResult | null>(null);
   const [resultTab, setResultTab] = useState<'video' | 'poster' | 'publish'>('video');
   const [trafficMode, setTrafficMode] = useState<'public' | 'private'>('public');
   const [posterStyleKey, setPosterStyleKey] = useState('default');
   const [publishStyleKey, setPublishStyleKey] = useState('default');
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const progress = step <= 4 ? ((step - 1) / 3) * 100 : 100;
+  const progress = step <= 3 ? ((step - 1) / 2) * 100 : 100;
 
   const handleSelectType = useCallback((type: TemplateType) => setSelectedType(type), []);
 
@@ -356,27 +352,6 @@ export default function HomePage() {
 
   const handleFormChange = useCallback((key: keyof FormData, value: string) => {
     setFormData(prev => ({ ...prev, [key]: value }));
-  }, []);
-
-  const handlePhotoChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files) return;
-    const newPhotos = [...photos];
-    const newPreviews = [...photoPreviews];
-    for (let i = 0; i < files.length && newPhotos.length < 6; i++) {
-      newPhotos.push(files[i]);
-      newPreviews.push(URL.createObjectURL(files[i]));
-    }
-    setPhotos(newPhotos.slice(0, 6));
-    setPhotoPreviews(newPreviews.slice(0, 6));
-  }, [photos, photoPreviews]);
-
-  const handleRemovePhoto = useCallback((index: number) => {
-    setPhotos(prev => prev.filter((_, i) => i !== index));
-    setPhotoPreviews(prev => {
-      URL.revokeObjectURL(prev[index]);
-      return prev.filter((_, i) => i !== index);
-    });
   }, []);
 
   const handleLoadDemo = useCallback((demoCase: DemoCase) => {
@@ -402,7 +377,7 @@ export default function HomePage() {
         body: JSON.stringify({
           type: selectedType,
           formData,
-          photoCount: photos.length,
+          photoCount: 0,
           localCase,
           localDirection,
         }),
@@ -410,7 +385,7 @@ export default function HomePage() {
       const data = await res.json();
       if (data.success) {
         setResult(data.data);
-        setStep(5);
+        setStep(4);
       } else {
         alert(data.error || '生成失败，请重试');
       }
@@ -419,7 +394,7 @@ export default function HomePage() {
     } finally {
       setGenerating(false);
     }
-  }, [selectedType, formData, photos, localCase, localDirection]);
+  }, [selectedType, formData, localCase, localDirection]);
 
   const handleReset = useCallback(() => {
     setStep(1);
@@ -427,15 +402,12 @@ export default function HomePage() {
     setLocalCase('');
     setLocalDirection('');
     setFormData({ ...emptyFormData });
-    setPhotos([]);
-    photoPreviews.forEach(p => URL.revokeObjectURL(p));
-    setPhotoPreviews([]);
     setResult(null);
     setResultTab('video');
     setTrafficMode('public');
     setPosterStyleKey('default');
     setPublishStyleKey('default');
-  }, [photoPreviews]);
+  }, []);
 
   // 获取当前视频提示词
   const getCurrentVideoPrompt = useCallback((): string => {
@@ -479,7 +451,7 @@ export default function HomePage() {
               <span className="text-2xl">🌾</span>
               <h1 className="text-xl font-bold text-[#3D2B1F]">乡村宣传AI助手</h1>
             </div>
-            {step > 1 && step <= 5 && (
+            {step > 1 && (
               <button
                 onClick={handleReset}
                 className="text-sm text-[#C4704B] hover:text-[#A85A38] font-medium px-3 py-1.5 rounded-lg hover:bg-[#FFF0E0]"
@@ -488,7 +460,7 @@ export default function HomePage() {
               </button>
             )}
           </div>
-          {step <= 4 && (
+          {step <= 3 && (
             <>
               <div className="mt-2 h-2 rounded-full bg-[#E8D5C4] overflow-hidden">
                 <div className="h-full rounded-full bg-[#C4704B] transition-all duration-500 ease-out" style={{ width: `${progress}%` }} />
@@ -496,8 +468,7 @@ export default function HomePage() {
               <div className="flex justify-between mt-1 text-xs text-[#8B7355]">
                 <span className={step >= 1 ? 'text-[#C4704B] font-medium' : ''}>①选类型</span>
                 <span className={step >= 2 ? 'text-[#C4704B] font-medium' : ''}>②填信息</span>
-                <span className={step >= 3 ? 'text-[#C4704B] font-medium' : ''}>③传照片</span>
-                <span className={step >= 4 ? 'text-[#C4704B] font-medium' : ''}>④生成</span>
+                <span className={step >= 3 ? 'text-[#C4704B] font-medium' : ''}>③生成</span>
               </div>
             </>
           )}
@@ -648,56 +619,8 @@ export default function HomePage() {
           </div>
         )}
 
-        {/* ===== 步骤3：传照片 ===== */}
+        {/* ===== 步骤3：确认生成 ===== */}
         {step === 3 && (
-          <div className="animate-fade-in-up">
-            <h2 className="text-2xl font-bold text-[#3D2B1F] mb-2">传几张照片</h2>
-            <p className="text-[#8B7355] mb-2 text-lg">手机里已有的照片就可以，不要求会拍大片</p>
-            <p className="text-[#C4704B] mb-6 text-base">上传的照片会作为整体参考，帮助生成更贴合你实际情况的提示词</p>
-
-            <div className="grid grid-cols-3 gap-3 mb-4">
-              {photoPreviews.map((preview, idx) => (
-                <div key={idx} className="relative aspect-[3/4] rounded-xl overflow-hidden border-2 border-[#E8D5C4]">
-                  <img src={preview} alt={`照片${idx + 1}`} className="w-full h-full object-cover" />
-                  <button
-                    onClick={() => handleRemovePhoto(idx)}
-                    className="absolute top-1 right-1 w-7 h-7 bg-red-500 text-white rounded-full text-sm font-bold flex items-center justify-center hover:bg-red-600"
-                  >
-                    ✕
-                  </button>
-                </div>
-              ))}
-              {photos.length < 6 && (
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  className="aspect-[3/4] rounded-xl border-2 border-dashed border-[#D4A853] bg-[#FFF8F0] flex flex-col items-center justify-center gap-2 hover:border-[#C4704B] hover:bg-[#FFF0E0] transition-all"
-                >
-                  <span className="text-3xl text-[#D4A853]">+</span>
-                  <span className="text-sm text-[#8B7355]">添加照片</span>
-                  <span className="text-xs text-[#C4B5A5]">({photos.length}/6)</span>
-                </button>
-              )}
-            </div>
-
-            <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={handlePhotoChange} className="hidden" />
-
-            <p className="text-sm text-[#8B7355] mb-6 text-center">
-              最多上传6张，支持 JPG、PNG 格式。不上传照片也能生成提示词。
-            </p>
-
-            <div className="flex gap-3 sticky bottom-4">
-              <button onClick={() => setStep(2)} className="flex-1 py-4 rounded-2xl text-xl font-bold bg-[#E8D5C4] text-[#6B4226] hover:bg-[#DDD0C0]">
-                ← 上一步
-              </button>
-              <button onClick={() => setStep(4)} className="flex-[2] py-4 rounded-2xl text-xl font-bold bg-[#C4704B] text-white hover:bg-[#A85A38] shadow-lg">
-                照片选好了，下一步 →
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* ===== 步骤4：确认生成 ===== */}
-        {step === 4 && (
           <div className="animate-fade-in-up">
             <h2 className="text-2xl font-bold text-[#3D2B1F] mb-2">检查一下，然后生成</h2>
             <p className="text-[#8B7355] mb-6 text-lg">确认信息没问题，点下面大按钮就行</p>
@@ -721,10 +644,7 @@ export default function HomePage() {
                   <p className="text-[#3D2B1F]">{formData[sf.key]}</p>
                 </div>
               ) : null)}
-              <div>
-                <span className="text-sm font-bold text-[#8B7355]">照片参考：</span>
-                <span className="text-[#3D2B1F]">{photos.length} 张{photos.length > 0 ? '（会作为整体参考融入提示词）' : '（未上传）'}</span>
-              </div>
+
             </div>
 
             {/* 生成说明 */}
@@ -759,7 +679,7 @@ export default function HomePage() {
             </div>
 
             <div className="flex gap-3 sticky bottom-4">
-              <button onClick={() => setStep(3)} className="flex-1 py-4 rounded-2xl text-xl font-bold bg-[#E8D5C4] text-[#6B4226] hover:bg-[#DDD0C0]">
+              <button onClick={() => setStep(2)} className="flex-1 py-4 rounded-2xl text-xl font-bold bg-[#E8D5C4] text-[#6B4226] hover:bg-[#DDD0C0]">
                 ← 修改
               </button>
               <button
@@ -775,8 +695,8 @@ export default function HomePage() {
           </div>
         )}
 
-        {/* ===== 步骤5：生成结果 ===== */}
-        {step === 5 && result && (
+        {/* ===== 步骤4：生成结果 ===== */}
+        {step === 4 && result && (
           <div className="animate-fade-in-up">
             <h2 className="text-2xl font-bold text-[#3D2B1F] mb-2">提示词生成好了！</h2>
             <p className="text-[#8B7355] mb-6 text-lg">复制下面的提示词，粘贴到AI工具里就能用</p>
