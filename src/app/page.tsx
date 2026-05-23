@@ -158,6 +158,32 @@ const FIELD_LABELS: Record<keyof FormData, string> = {
 };
 const emptyFormData: FormData = { q1: '', q2: '', q3: '' };
 
+// ========== 参考图预设 ==========
+type CategoryKey = 'person' | 'product' | 'storefront' | 'field';
+interface PresetImage { id: string; url: string; label: string; }
+interface ImageItem { id: string; url: string; label: string; }
+interface RefCategory { key: CategoryKey; icon: string; title: string; desc: string; maxCount: number; }
+
+const REF_CATEGORIES: RefCategory[] = [
+  { key: 'person', icon: '🧑‍🌾', title: '人物形象', desc: '你的头像、工作照、生活照', maxCount: 3 },
+  { key: 'product', icon: '🍊', title: '真实产品', desc: '你要卖的东西，实拍就好', maxCount: 4 },
+  { key: 'storefront', icon: '🏠', title: '门头和店内', desc: '店铺门头、室内环境', maxCount: 4 },
+  { key: 'field', icon: '🌾', title: '田野和村庄', desc: '果园、田地、村庄风景', maxCount: 4 },
+];
+
+const PRESET_IMAGES: Record<CategoryKey, PresetImage[]> = {
+  person: [{ id: 'preset-person-1', url: '/ref-images/person-1.jpeg', label: '农民老爷爷 - 正面照' }],
+  product: [
+    { id: 'preset-product-1', url: '/ref-images/product-1.jpeg', label: '柿饼/柿子 - 晾晒实拍' },
+    { id: 'preset-product-2', url: '/ref-images/product-2.jpeg', label: '黄酒 - 传统酿造' },
+  ],
+  storefront: [
+    { id: 'preset-store-1', url: '/ref-images/storefront-1.jpeg', label: '民宿门头 - 古村老屋' },
+    { id: 'preset-store-2', url: '/ref-images/storefront-2.jpeg', label: '农家饭店 - 室内环境' },
+  ],
+  field: [{ id: 'preset-field-1', url: '/ref-images/field-1.jpeg', label: '梯田村庄 - 秋收风景' }],
+};
+
 // ========== 复制按钮组件 ==========
 function CopyButton({ text, label }: { text: string; label?: string }) {
   const [copied, setCopied] = useState(false);
@@ -274,7 +300,18 @@ export default function HomePage() {
   const [trafficMode, setTrafficMode] = useState<'public' | 'private'>('public');
   const [posterStyleKey, setPosterStyleKey] = useState('default');
   const [publishStyleKey, setPublishStyleKey] = useState('default');
-  const progress = step <= 2 ? ((step - 1) / 1) * 100 : 100;
+  // 参考图状态
+  const [selectedPresets, setSelectedPresets] = useState<Record<CategoryKey, Set<string>>>({
+    person: new Set<string>(), product: new Set<string>(), storefront: new Set<string>(), field: new Set<string>(),
+  });
+  const [userImages, setUserImages] = useState<Record<CategoryKey, ImageItem[]>>({
+    person: [], product: [], storefront: [], field: [],
+  });
+  const [imageLoaded, setImageLoaded] = useState<Record<string, boolean>>({});
+  const fileInputRefs = useRef<Record<CategoryKey, HTMLInputElement | null>>({
+    person: null, product: null, storefront: null, field: null,
+  });
+  const progress = step <= 3 ? ((step - 1) / 2) * 100 : 100;
 
   const handleSelectType = useCallback((type: TemplateType) => setSelectedType(type), []);
 
@@ -347,7 +384,53 @@ export default function HomePage() {
     setTrafficMode('public');
     setPosterStyleKey('default');
     setPublishStyleKey('default');
+    setSelectedPresets({ person: new Set<string>(), product: new Set<string>(), storefront: new Set<string>(), field: new Set<string>() });
+    setUserImages({ person: [], product: [], storefront: [], field: [] });
   }, []);
+
+  // 参考图操作
+  const togglePreset = useCallback((category: CategoryKey, presetId: string) => {
+    setSelectedPresets(prev => {
+      const newSet = new Set(prev[category]);
+      if (newSet.has(presetId)) newSet.delete(presetId); else newSet.add(presetId);
+      return { ...prev, [category]: newSet };
+    });
+  }, []);
+
+  const toggleAllPresets = useCallback((category: CategoryKey) => {
+    const allIds = PRESET_IMAGES[category].map(p => p.id);
+    const currentSelected = selectedPresets[category];
+    const allSelected = allIds.every(id => currentSelected.has(id));
+    setSelectedPresets(prev => ({ ...prev, [category]: allSelected ? new Set<string>() : new Set(allIds) }));
+  }, [selectedPresets]);
+
+  const handleUpload = useCallback((category: CategoryKey, files: FileList | null) => {
+    if (!files) return;
+    const cat = REF_CATEGORIES.find(c => c.key === category)!;
+    const currentTotal = selectedPresets[category].size + userImages[category].length;
+    const remaining = cat.maxCount - currentTotal;
+    if (remaining <= 0) return;
+    const filesToProcess = Array.from(files).slice(0, remaining);
+    const newItems: ImageItem[] = filesToProcess.map(file => ({
+      id: `${category}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      url: URL.createObjectURL(file),
+      label: file.name,
+    }));
+    setUserImages(prev => ({ ...prev, [category]: [...prev[category], ...newItems] }));
+  }, [selectedPresets, userImages]);
+
+  const handleRemoveUserImage = useCallback((category: CategoryKey, id: string) => {
+    setUserImages(prev => ({
+      ...prev,
+      [category]: prev[category].filter(img => {
+        if (img.id === id) { URL.revokeObjectURL(img.url); return false; }
+        return true;
+      }),
+    }));
+  }, []);
+
+  const totalRefCount = Object.entries(selectedPresets).reduce((sum, [key, set]) => sum + set.size + userImages[key as CategoryKey].length, 0);
+  const getCategoryCount = (key: CategoryKey) => selectedPresets[key].size + userImages[key].length;
 
   // 获取当前视频提示词
   const getCurrentVideoPrompt = useCallback((): string => {
@@ -400,7 +483,7 @@ export default function HomePage() {
               </button>
             )}
           </div>
-          {step <= 3 && (
+          {step <= 4 && (
             <>
               <div className="mt-2 h-2 rounded-full bg-[#E8D5C4] overflow-hidden">
                 <div className="h-full rounded-full bg-[#C4704B] transition-all duration-500 ease-out" style={{ width: `${progress}%` }} />
@@ -408,6 +491,7 @@ export default function HomePage() {
               <div className="flex justify-between mt-1 text-xs text-[#8B7355]">
                 <span className={step >= 1 ? 'text-[#C4704B] font-medium' : ''}>①选类型</span>
                 <span className={step >= 2 ? 'text-[#C4704B] font-medium' : ''}>②填信息</span>
+                <span className={step >= 3 ? 'text-[#C4704B] font-medium' : ''}>③看结果</span>
               </div>
             </>
           )}
@@ -775,30 +859,213 @@ export default function HomePage() {
               </div>
             )}
 
-            {/* 上传参考图入口 */}
-            <div className="mt-8 bg-gradient-to-r from-[#C4704B] to-[#D4A853] rounded-2xl p-5 text-white shadow-lg">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-2xl">📸</span>
-                <span className="text-xl font-bold">想让AI照着你的实景来？</span>
-              </div>
-              <p className="text-white/90 text-base mb-4">
-                上传你的人物照片、产品实拍、门头店内、田野村庄，AI生成的视频和海报就能还原真实场景
-              </p>
+            {/* 下一步：选参考图 */}
+            <div className="mt-8">
               <button
-                onClick={() => window.open('/ref', '_blank')}
-                className="w-full py-4 rounded-xl text-lg font-bold bg-white text-[#C4704B] hover:bg-[#FFF8F0] shadow-md transition-all active:scale-[0.97]"
+                onClick={() => setStep(4)}
+                className="w-full py-5 rounded-2xl text-xl font-bold bg-gradient-to-r from-[#C4704B] to-[#D4A853] text-white hover:shadow-xl transition-all active:scale-[0.97] shadow-lg"
               >
-                去上传参考图 →
+                📸 下一步：选参考图，让AI照着你的实景来 →
               </button>
             </div>
 
             {/* 重新开始 */}
             <button
               onClick={handleReset}
-              className="w-full py-4 rounded-2xl text-xl font-bold bg-[#E8D5C4] text-[#6B4226] hover:bg-[#DDD0C0] mt-4"
+              className="w-full py-4 rounded-2xl text-lg font-bold bg-[#E8D5C4] text-[#6B4226] hover:bg-[#DDD0C0] mt-3"
             >
               再做一条新的
             </button>
+          </div>
+        )}
+
+        {/* ===== 步骤4：选参考图 ===== */}
+        {step === 4 && (
+          <div className="animate-fade-in-up">
+            <div className="flex items-center gap-3 mb-4">
+              <button
+                onClick={() => setStep(3)}
+                className="text-[#6B4226] hover:text-[#C4704B] text-lg font-bold"
+              >
+                ← 返回结果
+              </button>
+            </div>
+            <h2 className="text-2xl font-bold text-[#3D2B1F] mb-2">📸 选参考图</h2>
+            <p className="text-[#8B7355] mb-4 text-lg">选几张照片，AI照着你的实景来生成</p>
+
+            {/* 说明 */}
+            <div className="bg-[#FFF0E0] rounded-2xl p-4 border border-[#E8D5C4] mb-5">
+              <p className="text-[#6B4226] text-base leading-relaxed">
+                下面已经帮你准备好了一些样图，直接勾选就能用。<br/>
+                也可以上传你自己的照片替换，手机里已有的就行。
+              </p>
+            </div>
+
+            {/* 四个分类区 */}
+            <div className="space-y-4">
+              {REF_CATEGORIES.map(cat => {
+                const presets = PRESET_IMAGES[cat.key];
+                const allSelected = presets.length > 0 && presets.every(p => selectedPresets[cat.key].has(p.id));
+                const currentCount = getCategoryCount(cat.key);
+
+                return (
+                  <div key={cat.key} className="bg-white rounded-2xl border border-[#E8D5C4] overflow-hidden">
+                    {/* 分类标题 */}
+                    <div className="flex items-center justify-between p-4 pb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-2xl">{cat.icon}</span>
+                        <div>
+                          <h3 className="text-lg font-bold text-[#3D2B1F]">{cat.title}</h3>
+                          <p className="text-sm text-[#8B7355]">{cat.desc}</p>
+                        </div>
+                      </div>
+                      <span className="text-sm font-bold text-[#C4704B]">{currentCount}/{cat.maxCount}</span>
+                    </div>
+
+                    {/* 预设样图 */}
+                    {presets.length > 0 && (
+                      <div className="px-4 pb-2">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-bold text-[#6B4226] bg-[#FFF0E0] px-3 py-1 rounded-full">
+                            示例样图（可直接勾选）
+                          </span>
+                          {presets.length > 1 && (
+                            <button
+                              onClick={() => toggleAllPresets(cat.key)}
+                              className="text-sm font-bold text-[#C4704B] hover:underline"
+                            >
+                              {allSelected ? '取消全选' : '全选'}
+                            </button>
+                          )}
+                        </div>
+                        <div className="flex flex-wrap gap-3">
+                          {presets.map(preset => {
+                            const isSelected = selectedPresets[cat.key].has(preset.id);
+                            const loaded = imageLoaded[preset.id];
+                            return (
+                              <button
+                                key={preset.id}
+                                onClick={() => togglePreset(cat.key, preset.id)}
+                                className={`relative rounded-xl overflow-hidden border-3 transition-all active:scale-[0.97] ${
+                                  isSelected
+                                    ? 'border-[#C4704B] ring-2 ring-[#C4704B]/30 shadow-md'
+                                    : 'border-[#E8D5C4] hover:border-[#D4A853]'
+                                }`}
+                                style={{ width: '100px', height: '100px' }}
+                              >
+                                {!loaded && (
+                                  <div className="absolute inset-0 bg-[#F5EDE4] flex items-center justify-center">
+                                    <div className="w-5 h-5 border-2 border-[#E8D5C4] border-t-[#C4704B] rounded-full animate-spin" />
+                                  </div>
+                                )}
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img
+                                  src={preset.url}
+                                  alt={preset.label}
+                                  className="w-full h-full object-cover"
+                                  onLoad={() => setImageLoaded(prev => ({ ...prev, [preset.id]: true }))}
+                                />
+                                <div className={`absolute top-1.5 right-1.5 w-6 h-6 rounded-full flex items-center justify-center transition-all text-xs font-bold ${
+                                  isSelected
+                                    ? 'bg-[#C4704B] text-white shadow-md'
+                                    : 'bg-white/80 text-[#8B7355] border border-[#E8D5C4]'
+                                }`}>
+                                  {isSelected ? '✓' : ''}
+                                </div>
+                                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent px-1.5 py-1">
+                                  <span className="text-white text-[10px] font-bold leading-tight block">{preset.label}</span>
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 用户上传的图片 */}
+                    {userImages[cat.key].length > 0 && (
+                      <div className="px-4 pb-2">
+                        <span className="text-sm font-bold text-[#6B8F71] mb-2 block">你上传的</span>
+                        <div className="flex flex-wrap gap-3">
+                          {userImages[cat.key].map(img => (
+                            <div key={img.id} className="relative" style={{ width: '100px', height: '100px' }}>
+                              <div className="w-full h-full rounded-xl overflow-hidden border-2 border-[#6B8F71]">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img src={img.url} alt={img.label} className="w-full h-full object-cover" />
+                              </div>
+                              <button
+                                onClick={() => handleRemoveUserImage(cat.key, img.id)}
+                                className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full text-xs font-bold flex items-center justify-center shadow-md hover:bg-red-600"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 上传按钮 */}
+                    {currentCount < cat.maxCount ? (
+                      <div className="px-4 pb-4">
+                        <input
+                          ref={el => { fileInputRefs.current[cat.key] = el; }}
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          className="hidden"
+                          onChange={e => handleUpload(cat.key, e.target.files)}
+                        />
+                        <button
+                          onClick={() => fileInputRefs.current[cat.key]?.click()}
+                          className="w-full py-3 rounded-xl border-2 border-dashed border-[#E8D5C4] text-[#8B7355] text-base font-bold hover:border-[#C4704B] hover:text-[#C4704B] transition-colors active:scale-[0.97]"
+                        >
+                          + 上传你自己的照片（还可传{cat.maxCount - currentCount}张）
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="px-4 pb-4">
+                        <p className="text-center text-sm text-[#6B8F71] font-bold py-1">✓ 已选满{cat.maxCount}张</p>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* 拍照建议 */}
+            <div className="mt-5 bg-[#F5EDE4] rounded-2xl p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <span>💡</span>
+                <span className="font-bold text-[#6B4226]">拍照小建议</span>
+              </div>
+              <ul className="text-[#6B4226] text-sm space-y-1">
+                <li>• 人物照：正面、侧面各一张，干活时的照片最好</li>
+                <li>• 产品照：摆在一起拍，不需要白底</li>
+                <li>• 门头照：站在对面拍个全貌，店内拍一张氛围</li>
+                <li>• 田野照：有山有水有田的风景，随手拍就行</li>
+              </ul>
+            </div>
+
+            {/* 底部按钮 */}
+            <div className="mt-6 space-y-3 pb-4">
+              <button
+                onClick={handleReset}
+                className={`w-full py-5 rounded-2xl text-xl font-bold transition-all active:scale-[0.97] ${
+                  totalRefCount > 0
+                    ? 'bg-[#C4704B] text-white hover:bg-[#A85A38] shadow-lg'
+                    : 'bg-[#C4704B]/80 text-white hover:bg-[#C4704B] shadow-lg'
+                }`}
+              >
+                {totalRefCount > 0 ? `✓ 选好了${totalRefCount}张，完成！` : '✓ 完成，不做选择也可以'}
+              </button>
+              <button
+                onClick={() => setStep(3)}
+                className="w-full py-4 rounded-2xl text-lg font-bold bg-[#E8D5C4] text-[#6B4226] hover:bg-[#DDD0C0]"
+              >
+                ← 返回查看提示词
+              </button>
+            </div>
           </div>
         )}
       </main>
