@@ -8,6 +8,9 @@ export interface FormData {
   location: string;
   contact: string;
   slogan: string;
+  q1?: string;
+  q2?: string;
+  q3?: string;
 }
 
 export interface PosterStyleOption {
@@ -322,6 +325,21 @@ export function generate(
   localCase?: string,
   localDirection?: string,
 ): GenerateResult {
+  // 如果使用q1/q2/q3格式，映射到旧字段
+  if (formData.q1 || formData.q2 || formData.q3) {
+    const q1 = formData.q1 || '';
+    const q2 = formData.q2 || '';
+    const q3 = formData.q3 || '';
+    formData = {
+      name: q1,
+      location: q1,
+      highlights: q2,
+      price: q2,
+      contact: q3,
+      slogan: q3,
+    };
+  }
+
   const lc = localCase || '';
   const ld = localDirection || '';
 
