@@ -775,10 +775,27 @@ export default function HomePage() {
               </div>
             )}
 
+            {/* 上传参考图入口 */}
+            <div className="mt-8 bg-gradient-to-r from-[#C4704B] to-[#D4A853] rounded-2xl p-5 text-white shadow-lg">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-2xl">📸</span>
+                <span className="text-xl font-bold">想让AI照着你的实景来？</span>
+              </div>
+              <p className="text-white/90 text-base mb-4">
+                上传你的人物照片、产品实拍、门头店内、田野村庄，AI生成的视频和海报就能还原真实场景
+              </p>
+              <button
+                onClick={() => window.open('/ref', '_blank')}
+                className="w-full py-4 rounded-xl text-lg font-bold bg-white text-[#C4704B] hover:bg-[#FFF8F0] shadow-md transition-all active:scale-[0.97]"
+              >
+                去上传参考图 →
+              </button>
+            </div>
+
             {/* 重新开始 */}
             <button
               onClick={handleReset}
-              className="w-full py-4 rounded-2xl text-xl font-bold bg-[#E8D5C4] text-[#6B4226] hover:bg-[#DDD0C0] mt-8"
+              className="w-full py-4 rounded-2xl text-xl font-bold bg-[#E8D5C4] text-[#6B4226] hover:bg-[#DDD0C0] mt-4"
             >
               再做一条新的
             </button>
